@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { ArrowRight, PaintBucket, Minimize2, Image as ImageIcon } from "lucide-react";
+import { ArrowRight, PaintBucket, Minimize2, Image as ImageIcon, Wrench } from "lucide-react";
 import { useGetFeaturedIcons, useGetIconStats } from "@workspace/api-client-react";
 import { IconCard } from "@/components/shared/IconCard";
 
@@ -20,9 +20,14 @@ export default function Home() {
         <p className="text-xl md:text-2xl font-medium max-w-2xl mb-12 leading-relaxed">
           Gudang ikon brutalis untuk developer. SVG bersih, tanpa tracking, dan tools browser langsung pakai.
         </p>
-        <Link href="/icons" className="nb-btn bg-accent text-xl py-4 px-12 inline-flex items-center gap-3">
-          JELAJAHI IKON <ArrowRight className="w-6 h-6" />
-        </Link>
+        <div className="flex flex-col sm:flex-row items-center gap-4">
+          <Link href="/icons" className="nb-btn bg-accent text-xl py-4 px-12 inline-flex items-center gap-3">
+            JELAJAHI IKON <ArrowRight className="w-6 h-6" />
+          </Link>
+          <Link href="/tools" className="nb-btn text-xl py-4 px-12 inline-flex items-center gap-3" style={{ background: "#4DBBFF" }}>
+            JELAJAHI TOOLS <Wrench className="w-6 h-6" />
+          </Link>
+        </div>
       </section>
 
       {/* Stats Bar */}
