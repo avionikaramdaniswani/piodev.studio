@@ -10,9 +10,9 @@ import { RoleGuard } from "@/components/shared/RoleGuard";
 import { TierBadge } from "@/components/shared/TierBadge";
 
 const ROLE_META: Record<string, { label: string; bg: string; color: string }> = {
-  admin: { label: "Admin",     bg: "#FF6B35", color: "white"   },
-  staff: { label: "Staff",     bg: "#4DBBFF", color: "white"   },
-  user:  { label: "Pengguna",  bg: "#FFE034", color: "#0A0A0A" },
+  admin: { label: "Admin", bg: "#FF6B35", color: "white" },
+  staff: { label: "Staff", bg: "#4DBBFF", color: "white" },
+  user: { label: "Pengguna", bg: "#FFE034", color: "#0A0A0A" },
 };
 
 const PLUS_PERKS = [
@@ -26,12 +26,11 @@ const PLUS_PERKS = [
 type TabId = "akun" | "langganan" | "keamanan";
 
 const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
-  { id: "akun",       label: "AKUN",      icon: <User className="w-4 h-4" /> },
-  { id: "langganan",  label: "LANGGANAN", icon: <Sparkles className="w-4 h-4" /> },
-  { id: "keamanan",   label: "KEAMANAN",  icon: <Lock className="w-4 h-4" /> },
+  { id: "akun", label: "AKUN", icon: <User className="w-4 h-4" /> },
+  { id: "langganan", label: "LANGGANAN", icon: <Sparkles className="w-4 h-4" /> },
+  { id: "keamanan", label: "KEAMANAN", icon: <Lock className="w-4 h-4" /> },
 ];
 
-/* ── Username Editor ───────────────────────────────────── */
 function UsernameEditor() {
   const { username, updateUsername, refreshProfile } = useAuth();
   const [editing, setEditing] = useState(false);
@@ -46,21 +45,23 @@ function UsernameEditor() {
   };
 
   const handleSave = async () => {
+    if (saving) return;
     setSaving(true);
     setError(null);
     const { error: err } = await updateUsername(value);
     setSaving(false);
     if (err) {
       setError(err);
-    } else {
-      await refreshProfile();
-      setEditing(false);
+      return;
     }
+    await refreshProfile();
+    setEditing(false);
   };
 
   const handleCancel = () => {
     setEditing(false);
     setError(null);
+    setValue(username ?? "");
   };
 
   if (editing) {
@@ -75,7 +76,10 @@ function UsernameEditor() {
             placeholder="nama_pengguna_kamu"
             maxLength={32}
             disabled={saving}
-            onKeyDown={e => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") handleCancel(); }}
+            onKeyDown={e => {
+              if (e.key === "Enter") handleSave();
+              if (e.key === "Escape") handleCancel();
+            }}
           />
           <button
             onClick={handleSave}
@@ -114,7 +118,6 @@ function UsernameEditor() {
   );
 }
 
-/* ── Quota Bar ─────────────────────────────────────────── */
 function QuotaBar() {
   const { tier, downloadsToday, quotaLimit } = useAuth();
   const isPlus = tier === "plus";
@@ -151,7 +154,6 @@ function QuotaBar() {
               <span className="font-mono text-xs opacity-50 ml-2">({remaining} tersisa)</span>
             </p>
           </div>
-          {/* Progress bar */}
           <div className="h-2.5 w-full border-[2px] border-foreground bg-background">
             <div
               className="h-full transition-all duration-500"
@@ -183,7 +185,6 @@ function QuotaBar() {
   );
 }
 
-/* ── Tab: Akun ─────────────────────────────────────────── */
 function TabAkun() {
   const { user, role, tier } = useAuth();
   const roleMeta = ROLE_META[role ?? "user"];
@@ -193,7 +194,6 @@ function TabAkun() {
 
   return (
     <div className="flex flex-col gap-1">
-      {/* Username */}
       <div className="flex items-start gap-4 py-4 border-b-[2px] border-foreground/10">
         <div className="opacity-40 mt-0.5 shrink-0"><User className="w-4 h-4" /></div>
         <div className="min-w-0 flex-1">
@@ -201,8 +201,6 @@ function TabAkun() {
           <UsernameEditor />
         </div>
       </div>
-
-      {/* Email */}
       <div className="flex items-start gap-4 py-4 border-b-[2px] border-foreground/10">
         <div className="opacity-40 mt-0.5 shrink-0"><Mail className="w-4 h-4" /></div>
         <div className="min-w-0 flex-1">
@@ -210,8 +208,6 @@ function TabAkun() {
           <p className="font-bold break-all">{user?.email}</p>
         </div>
       </div>
-
-      {/* Tier + role */}
       <div className="flex items-start gap-4 py-4 border-b-[2px] border-foreground/10">
         <div className="opacity-40 mt-0.5 shrink-0"><Shield className="w-4 h-4" /></div>
         <div className="min-w-0 flex-1">
@@ -227,11 +223,7 @@ function TabAkun() {
           </div>
         </div>
       </div>
-
-      {/* Quota bar */}
       <QuotaBar />
-
-      {/* Join date */}
       <div className="flex items-start gap-4 py-4 border-b-[2px] border-foreground/10">
         <div className="opacity-40 mt-0.5 shrink-0"><Calendar className="w-4 h-4" /></div>
         <div className="min-w-0 flex-1">
@@ -239,8 +231,6 @@ function TabAkun() {
           <p className="font-bold">{joinedAt}</p>
         </div>
       </div>
-
-      {/* User ID */}
       <div className="flex items-start gap-4 py-4">
         <div className="opacity-40 mt-0.5 shrink-0"><Key className="w-4 h-4" /></div>
         <div className="min-w-0 flex-1">
@@ -252,7 +242,6 @@ function TabAkun() {
   );
 }
 
-/* ── Tab: Langganan ────────────────────────────────────── */
 function TabLangganan() {
   const { tier } = useAuth();
   const isPlus = tier === "plus";
@@ -315,7 +304,6 @@ function TabLangganan() {
   );
 }
 
-/* ── Tab: Keamanan ─────────────────────────────────────── */
 function TabKeamanan() {
   const { signOut } = useAuth();
   const [, navigate] = useLocation();
@@ -343,7 +331,6 @@ function TabKeamanan() {
           GANTI KATA SANDI
         </button>
       </div>
-
       <div className="border-[3px] border-foreground p-5 flex flex-col gap-3" style={{ borderColor: "#FF6B35" }}>
         <div className="flex items-center gap-2 border-b-[2px] border-foreground/10 pb-3">
           <LogOut className="w-4 h-4 opacity-40" />
@@ -364,7 +351,6 @@ function TabKeamanan() {
   );
 }
 
-/* ── Main page ─────────────────────────────────────────── */
 function ProfilContent() {
   const { user, role, tier, username } = useAuth();
   const [activeTab, setActiveTab] = useState<TabId>("akun");
@@ -378,14 +364,10 @@ function ProfilContent() {
 
   return (
     <div className="max-w-2xl mx-auto py-8 flex flex-col gap-6">
-      {/* Profile header */}
       <div className="nb-card overflow-hidden">
         <div className="h-3 w-full" style={{ background: isPlus ? "#FFE034" : "#4DBBFF" }} />
         <div className="p-6 flex items-center gap-5">
-          <div
-            className="w-16 h-16 border-[4px] border-foreground shadow-[4px_4px_0_#0A0A0A] flex items-center justify-center text-2xl font-black shrink-0"
-            style={{ background: "#4DBBFF" }}
-          >
+          <div className="w-16 h-16 border-[4px] border-foreground shadow-[4px_4px_0_#0A0A0A] flex items-center justify-center text-2xl font-black shrink-0" style={{ background: "#4DBBFF" }}>
             {initials}
           </div>
           <div className="min-w-0 flex-1">
@@ -394,10 +376,7 @@ function ProfilContent() {
             </p>
             <p className="font-mono text-xs opacity-50 truncate mt-0.5 mb-2">{user?.email}</p>
             <div className="flex items-center gap-2 flex-wrap">
-              <span
-                className="font-black text-xs px-2 py-1 border-[2px] border-foreground shadow-[2px_2px_0_#0A0A0A]"
-                style={{ background: roleMeta.bg, color: roleMeta.color }}
-              >
+              <span className="font-black text-xs px-2 py-1 border-[2px] border-foreground shadow-[2px_2px_0_#0A0A0A]" style={{ background: roleMeta.bg, color: roleMeta.color }}>
                 {roleMeta.label.toUpperCase()}
               </span>
               <TierBadge tier={tier} size="sm" />
@@ -406,20 +385,12 @@ function ProfilContent() {
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="flex flex-col gap-0">
         <div className="flex border-[3px] border-foreground overflow-hidden shadow-[4px_4px_0_#0A0A0A]">
           {TABS.map((tab, i) => {
             const active = activeTab === tab.id;
             return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 font-black text-sm transition-all
-                  ${i > 0 ? "border-l-[3px] border-foreground" : ""}
-                  ${active ? "" : "opacity-50 hover:opacity-80"}`}
-                style={{ background: active ? "#FFE034" : "transparent" }}
-              >
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex-1 flex items-center justify-center gap-2 py-3 font-black text-sm transition-all ${i > 0 ? "border-l-[3px] border-foreground" : ""} ${active ? "" : "opacity-50 hover:opacity-80"}`} style={{ background: active ? "#FFE034" : "transparent" }}>
                 {tab.icon}
                 <span className="hidden sm:inline">{tab.label}</span>
               </button>
@@ -427,9 +398,9 @@ function ProfilContent() {
           })}
         </div>
         <div className="border-[3px] border-t-0 border-foreground p-6" style={{ background: "var(--card)" }}>
-          {activeTab === "akun"      && <TabAkun />}
+          {activeTab === "akun" && <TabAkun />}
           {activeTab === "langganan" && <TabLangganan />}
-          {activeTab === "keamanan"  && <TabKeamanan />}
+          {activeTab === "keamanan" && <TabKeamanan />}
         </div>
       </div>
     </div>

@@ -7,6 +7,8 @@ export type UserTier = "free" | "plus";
 
 const FREE_QUOTA = 50;
 
+type ProfileUpdateResult = { error: string | null };
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -18,7 +20,7 @@ interface AuthContextType {
   loading: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
-  updateUsername: (username: string) => Promise<{ error: string | null }>;
+  updateUsername: (username: string) => Promise<ProfileUpdateResult>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -45,11 +47,15 @@ interface ProfileData {
 
 async function fetchProfile(userId: string): Promise<ProfileData> {
   try {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("profiles")
       .select("role, tier, username, downloads_today, quota_reset_date")
       .eq("id", userId)
       .single();
+
+    if (error) {
+      return { role: "user", tier: "free", username: null, downloadsToday: 0, quotaLimit: FREE_QUOTA };
+    }
 
     const tier: UserTier = (data?.tier as UserTier) ?? "free";
     const today = new Date().toISOString().split("T")[0];
@@ -93,13 +99,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     applyProfile(profile);
   }, []);
 
-  const updateUsername = useCallback(async (newUsername: string): Promise<{ error: string | null }> => {
+  const updateUsername = useCallback(async (newUsername: string): Promise<ProfileUpdateResult> => {
+    const cleanUsername = newUsername.trim().toLowerCase().replace(/[^a-z0-9_]/g, "");
+
+    if (!cleanUsername) return { error: "Nama pengguna tidak boleh kosong." };
+    if (cleanUsername.length < 3) return { error: "Nama pengguna minimal 3 karakter." };
+
     const { data: { user: currentUser } } = await supabase.auth.getUser();
     if (!currentUser) return { error: "Tidak login" };
 
     const { error } = await supabase
       .from("profiles")
-      .update({ username: newUsername.trim() || null })
+      .update({ username: cleanUsername })
       .eq("id", currentUser.id);
 
     if (error) {
@@ -107,7 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { error: "Gagal menyimpan nama pengguna." };
     }
 
-    setUsername(newUsername.trim() || null);
+    setUsername(cleanUsername);
     return { error: null };
   }, []);
 
