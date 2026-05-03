@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRoute, Link, useLocation } from "wouter";
 import { Download, Heart, Hash, Layers, Tag, ExternalLink, Code2, Sparkles, UserPlus, X, FileImage, FileText, FileCode2 } from "lucide-react";
 import { jsPDF } from "jspdf";
@@ -88,6 +88,15 @@ export default function IconDetail() {
   const [showAnonLimitModal, setShowAnonLimitModal] = useState(false);
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [selectedPngSize, setSelectedPngSize] = useState(64);
+
+  useEffect(() => {
+    if (showDownloadModal) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [showDownloadModal]);
 
   const accentColor = icon ? ACCENT_COLORS[icon.id % ACCENT_COLORS.length] : ACCENT_COLORS[0];
 

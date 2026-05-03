@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { Download, Heart, FileImage, FileText, FileCode2, X } from "lucide-react";
 import { jsPDF } from "jspdf";
@@ -60,6 +60,15 @@ export function IconCard({ icon, index }: IconCardProps) {
   const likeMutation = useToggleLike();
 
   const accentColor = ACCENT_COLORS[index % ACCENT_COLORS.length];
+
+  useEffect(() => {
+    if (showDownloadModal) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [showDownloadModal]);
 
   const handleOpenModal = (e: React.MouseEvent) => {
     e.preventDefault();
