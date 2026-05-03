@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import {
   LogOut, Mail, Shield, Calendar, Key,
@@ -352,8 +352,14 @@ function TabKeamanan() {
 }
 
 function ProfilContent() {
-  const { user, role, tier, username } = useAuth();
+  const { user, role, tier, username, refreshProfile } = useAuth();
   const [activeTab, setActiveTab] = useState<TabId>("akun");
+
+  // Always fetch fresh profile data from server when this page loads
+  // This fixes stale in-memory state (e.g. role updated in DB but not reflected yet)
+  useEffect(() => {
+    refreshProfile();
+  }, [refreshProfile]);
 
   const initials = username
     ? username.slice(0, 2).toUpperCase()
