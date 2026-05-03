@@ -57,7 +57,7 @@ export default function IconsList() {
                   <div className="h-6 w-16 bg-muted border-[2px] border-foreground"></div>
                   <div className="h-6 w-20 bg-muted border-[2px] border-foreground"></div>
                 </div>
-              ) : categories?.map(cat => (
+              ) : (Array.isArray(categories) ? categories : []).map(cat => (
                 <button 
                   key={cat.name}
                   onClick={() => { setCategory(cat.name); setPage(1); }}
@@ -109,7 +109,7 @@ export default function IconsList() {
                 <div key={i} className="nb-card h-40 bg-muted animate-pulse" />
               ))}
             </div>
-          ) : iconData?.icons.length === 0 ? (
+          ) : (Array.isArray(iconData?.icons) ? iconData!.icons.length : 0) === 0 ? (
             <div className="nb-card bg-accent p-12 text-center text-accent-foreground">
               <h2 className="text-3xl font-black mb-2 uppercase">NO ICONS FOUND</h2>
               <p className="font-mono">Try searching for something else or clear your filters.</p>
@@ -123,7 +123,7 @@ export default function IconsList() {
           ) : (
             <>
               <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-4 lg:gap-6 mb-12">
-                {(iconData?.icons ?? []).map((icon, i) => (
+                {(Array.isArray(iconData?.icons) ? iconData!.icons : []).map((icon, i) => (
                   <IconCard key={icon.id} icon={icon} index={i} />
                 ))}
               </div>

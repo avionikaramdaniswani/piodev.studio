@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useRoute, Link } from "wouter";
-import { Download, Copy, Heart, Hash, Layers, Tag, ExternalLink } from "lucide-react";
+import { Download, Copy, Heart, Hash, Layers, Tag, ExternalLink, Code2 } from "lucide-react";
 import { useGetIconBySlug, useDownloadIcon, useToggleLike, useGetSimilarIcons } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { IconCard } from "@/components/shared/IconCard";
@@ -186,7 +186,7 @@ export default function IconDetail() {
       </div>
 
       {/* Similar Icons */}
-      {similarIcons && similarIcons.length > 0 && (
+      {Array.isArray(similarIcons) && similarIcons.length > 0 && (
         <section>
           <div className="border-t-[4px] border-foreground pt-12 mb-8">
             <h2 className="text-4xl font-black">SIMILAR ICONS</h2>
