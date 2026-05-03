@@ -2,6 +2,7 @@ import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 import { Layout } from "@/components/layout/Layout";
 import Home from "@/pages/home";
@@ -17,6 +18,8 @@ import CssShadowGenerator from "@/pages/tools/css-shadow-generator";
 import FaviconGenerator from "@/pages/tools/favicon-generator";
 import GradientGenerator from "@/pages/tools/gradient-generator";
 import UploadIcon from "@/pages/upload";
+import Login from "@/pages/login";
+import Register from "@/pages/register";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -45,6 +48,8 @@ function Router() {
         <Route path="/tools/favicon-generator" component={FaviconGenerator} />
         <Route path="/tools/gradient-generator" component={GradientGenerator} />
         <Route path="/upload" component={UploadIcon} />
+        <Route path="/login" component={Login} />
+        <Route path="/register" component={Register} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
@@ -54,12 +59,14 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Router />
-        </WouterRouter>
-        <Toaster />
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <Router />
+          </WouterRouter>
+          <Toaster />
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
