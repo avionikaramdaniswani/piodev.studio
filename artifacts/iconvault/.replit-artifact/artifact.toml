@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "IconVault — piodev.studio"
+version = "1.0.0"
+id = "artifacts/iconvault"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19847
+
+[services.development]
+run = "pnpm --filter @workspace/iconvault run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/iconvault", "run", "build" ]
+publicDir = "artifacts/iconvault/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19847"
+BASE_PATH = "/"

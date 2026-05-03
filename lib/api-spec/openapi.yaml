@@ -3,20 +3,25 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: IconVault API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: icons
+    description: Icon operations
+  - name: categories
+    description: Category operations
+  - name: tools
+    description: Tool stats
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +29,194 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /icons:
+    get:
+      operationId: listIcons
+      tags: [icons]
+      summary: List icons with filters
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: style
+          in: query
+          schema:
+            type: string
+            enum: [outline, filled, duotone]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 24
+      responses:
+        "200":
+          description: List of icons
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IconListResponse"
+    post:
+      operationId: createIcon
+      tags: [icons]
+      summary: Upload a new icon
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateIconBody"
+      responses:
+        "201":
+          description: Created icon
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Icon"
+
+  /icons/featured:
+    get:
+      operationId: getFeaturedIcons
+      tags: [icons]
+      summary: Get featured icons
+      responses:
+        "200":
+          description: Featured icons
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Icon"
+
+  /icons/stats:
+    get:
+      operationId: getIconStats
+      tags: [icons]
+      summary: Get global stats
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IconStats"
+
+  /icons/categories:
+    get:
+      operationId: listCategories
+      tags: [categories]
+      summary: List all categories with counts
+      responses:
+        "200":
+          description: Categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CategoryCount"
+
+  /icons/{slug}:
+    get:
+      operationId: getIconBySlug
+      tags: [icons]
+      summary: Get a single icon by slug
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Icon
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Icon"
+        "404":
+          description: Not found
+
+  /icons/{id}/download:
+    post:
+      operationId: downloadIcon
+      tags: [icons]
+      summary: Increment download count
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated download count
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  downloads:
+                    type: integer
+                required:
+                  - downloads
+
+  /icons/{id}/like:
+    post:
+      operationId: toggleLike
+      tags: [icons]
+      summary: Toggle like on an icon
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated like status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  likes:
+                    type: integer
+                required:
+                  - likes
+
+  /icons/similar/{id}:
+    get:
+      operationId: getSimilarIcons
+      tags: [icons]
+      summary: Get similar icons by category
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Similar icons
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Icon"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +227,132 @@ components:
       required:
         - status
 
+    Icon:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+          nullable: true
+        svgContent:
+          type: string
+        category:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        style:
+          type: string
+          enum: [outline, filled, duotone]
+        downloads:
+          type: integer
+        likes:
+          type: integer
+        isFeatured:
+          type: boolean
+        license:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - slug
+        - svgContent
+        - category
+        - tags
+        - style
+        - downloads
+        - likes
+        - isFeatured
+        - license
+        - createdAt
+
+    IconListResponse:
+      type: object
+      properties:
+        icons:
+          type: array
+          items:
+            $ref: "#/components/schemas/Icon"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+        totalPages:
+          type: integer
+      required:
+        - icons
+        - total
+        - page
+        - limit
+        - totalPages
+
+    CreateIconBody:
+      type: object
+      properties:
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        svgContent:
+          type: string
+        category:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        style:
+          type: string
+          enum: [outline, filled, duotone]
+        license:
+          type: string
+      required:
+        - name
+        - slug
+        - svgContent
+        - category
+        - style
+
+    IconStats:
+      type: object
+      properties:
+        totalIcons:
+          type: integer
+        totalDownloads:
+          type: integer
+        totalCategories:
+          type: integer
+        totalTools:
+          type: integer
+      required:
+        - totalIcons
+        - totalDownloads
+        - totalCategories
+        - totalTools
+
+    CategoryCount:
+      type: object
+      properties:
+        name:
+          type: string
+        count:
+          type: integer
+        color:
+          type: string
+      required:
+        - name
+        - count
+        - color
