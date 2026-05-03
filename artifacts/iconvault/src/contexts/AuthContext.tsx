@@ -46,6 +46,7 @@ interface ProfileData {
 }
 
 async function fetchProfile(userId: string): Promise<ProfileData> {
+  // Langkah 1: coba query lengkap dengan semua kolom
   try {
     const { data, error } = await supabase
       .from("profiles")
@@ -53,22 +54,44 @@ async function fetchProfile(userId: string): Promise<ProfileData> {
       .eq("id", userId)
       .single();
 
-    if (error) {
-      return { role: "user", tier: "free", username: null, downloadsToday: 0, quotaLimit: FREE_QUOTA };
+    if (!error && data) {
+      const tier: UserTier = (data.tier as UserTier) ?? "free";
+      const today = new Date().toISOString().split("T")[0];
+      const isToday = data.quota_reset_date === today;
+      const downloadsToday = isToday ? (data.downloads_today ?? 0) : 0;
+      return {
+        role: (data.role as UserRole) ?? "user",
+        tier,
+        username: data.username ?? null,
+        downloadsToday,
+        quotaLimit: tier === "plus" ? -1 : FREE_QUOTA,
+      };
     }
 
-    const tier: UserTier = (data?.tier as UserTier) ?? "free";
-    const today = new Date().toISOString().split("T")[0];
-    const isToday = data?.quota_reset_date === today;
-    const downloadsToday = isToday ? (data?.downloads_today ?? 0) : 0;
+    // Langkah 2: kolom baru mungkin belum ada — coba query minimal (role + tier saja)
+    const { data: minimal, error: minErr } = await supabase
+      .from("profiles")
+      .select("role, tier")
+      .eq("id", userId)
+      .single();
 
-    return {
-      role: (data?.role as UserRole) ?? "user",
-      tier,
-      username: data?.username ?? null,
-      downloadsToday,
-      quotaLimit: tier === "plus" ? -1 : FREE_QUOTA,
-    };
+    if (!minErr && minimal) {
+      const tier: UserTier = (minimal.tier as UserTier) ?? "free";
+      return {
+        role: (minimal.role as UserRole) ?? "user",
+        tier,
+        username: null,
+        downloadsToday: 0,
+        quotaLimit: tier === "plus" ? -1 : FREE_QUOTA,
+      };
+    }
+
+    // Langkah 3: row belum ada sama sekali — buat dulu
+    await supabase
+      .from("profiles")
+      .upsert({ id: userId, role: "user", tier: "free" }, { onConflict: "id" });
+
+    return { role: "user", tier: "free", username: null, downloadsToday: 0, quotaLimit: FREE_QUOTA };
   } catch {
     return { role: "user", tier: "free", username: null, downloadsToday: 0, quotaLimit: FREE_QUOTA };
   }
