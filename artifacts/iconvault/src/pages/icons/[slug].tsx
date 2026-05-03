@@ -1,11 +1,15 @@
 import { useState } from "react";
 import { useRoute, Link } from "wouter";
 import { Download, Copy, Heart, Hash, Layers, Tag, ExternalLink, Code2, Sparkles } from "lucide-react";
+
 import { useGetIconBySlug, useDownloadIcon, useToggleLike, useGetSimilarIcons } from "@workspace/api-client-react";
+
 import { useToast } from "@/hooks/use-toast";
 import { IconCard } from "@/components/shared/IconCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
+
+const ACCENT_COLORS = ['#FFE034', '#FF6B9D', '#4DBBFF', '#00E676', '#FF6B35'];
 
 export default function IconDetail() {
   const [, params] = useRoute("/icons/:slug");
@@ -23,6 +27,8 @@ export default function IconDetail() {
   const [likes, setLikes] = useState(0);
   const [bgColor, setBgColor] = useState<"white" | "#FFE034" | "#0A0A0A">("white");
   const [downloading, setDownloading] = useState(false);
+
+  const accentColor = icon ? ACCENT_COLORS[icon.id % ACCENT_COLORS.length] : ACCENT_COLORS[0];
 
   if (icon && likes === 0 && icon.likes > 0) {
     setLikes(icon.likes);
@@ -143,30 +149,34 @@ export default function IconDetail() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-24">
         {/* Preview Area */}
         <div className="flex flex-col gap-4">
-          <div
-            className="aspect-square nb-card flex items-center justify-center p-12 transition-colors duration-300"
-            style={{ backgroundColor: bgColor, color: bgColor === "#0A0A0A" ? "white" : "#0A0A0A" }}
-          >
+          <div className="nb-card overflow-hidden">
+            {/* Accent strip — same pattern as IconCard */}
+            <div className="h-4 w-full border-b-[3px] border-foreground" style={{ backgroundColor: accentColor }} />
             <div
-              className="w-full h-full max-w-[240px] max-h-[240px] [&>svg]:w-full [&>svg]:h-full"
-              dangerouslySetInnerHTML={{ __html: icon.svgContent }}
-            />
+              className="flex items-center justify-center p-12 h-64 transition-colors duration-300"
+              style={{ backgroundColor: bgColor, color: bgColor === "#0A0A0A" ? "white" : "#0A0A0A" }}
+            >
+              <div
+                className="w-full h-full max-w-[160px] max-h-[160px] [&>svg]:w-full [&>svg]:h-full"
+                dangerouslySetInnerHTML={{ __html: icon.svgContent }}
+              />
+            </div>
           </div>
 
-          <div className="flex justify-center gap-4">
+          <div className="flex justify-center gap-3">
             <button
               onClick={() => setBgColor("white")}
-              className={`w-12 h-12 border-[3px] border-foreground shadow-[2px_2px_0_#0A0A0A] bg-white ${bgColor === "white" ? "outline outline-4 outline-offset-2 outline-primary" : ""}`}
+              className={`w-10 h-10 border-[3px] border-foreground shadow-[2px_2px_0_#0A0A0A] bg-white ${bgColor === "white" ? "outline outline-4 outline-offset-2 outline-primary" : ""}`}
               title="Latar Putih"
             />
             <button
               onClick={() => setBgColor("#FFE034")}
-              className={`w-12 h-12 border-[3px] border-foreground shadow-[2px_2px_0_#0A0A0A] bg-[#FFE034] ${bgColor === "#FFE034" ? "outline outline-4 outline-offset-2 outline-foreground" : ""}`}
+              className={`w-10 h-10 border-[3px] border-foreground shadow-[2px_2px_0_#0A0A0A] bg-[#FFE034] ${bgColor === "#FFE034" ? "outline outline-4 outline-offset-2 outline-foreground" : ""}`}
               title="Latar Kuning"
             />
             <button
               onClick={() => setBgColor("#0A0A0A")}
-              className={`w-12 h-12 border-[3px] border-foreground shadow-[2px_2px_0_#0A0A0A] bg-[#0A0A0A] ${bgColor === "#0A0A0A" ? "outline outline-4 outline-offset-2 outline-primary" : ""}`}
+              className={`w-10 h-10 border-[3px] border-foreground shadow-[2px_2px_0_#0A0A0A] bg-[#0A0A0A] ${bgColor === "#0A0A0A" ? "outline outline-4 outline-offset-2 outline-primary" : ""}`}
               title="Latar Hitam"
             />
           </div>
