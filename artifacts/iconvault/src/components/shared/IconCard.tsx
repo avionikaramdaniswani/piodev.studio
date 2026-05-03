@@ -184,7 +184,7 @@ export function IconCard({ icon, index }: IconCardProps) {
               className="w-16 h-16 [&>svg]:w-full [&>svg]:h-full [&>svg]:text-foreground"
               dangerouslySetInnerHTML={{ __html: icon.svgContent }}
             />
-            <div className="absolute inset-0 bg-background/90 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity gap-3">
+            <div className="absolute inset-0 bg-background/90 hidden sm:flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity gap-3">
               <button
                 onClick={handleOpenModal}
                 disabled={downloading}
