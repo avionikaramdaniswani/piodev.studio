@@ -47,7 +47,17 @@ interface ProfileData {
 }
 
 async function fetchProfile(userId: string): Promise<ProfileData | null> {
-  // Fetch profile — returns null only if account is deleted (FK violation)
+  // Always get a fresh session first. This ensures the Supabase client's internal
+  // auth state is up-to-date (including token refresh if expired) before we query.
+  // Without this, on page refresh the RLS policy auth.uid() may return null,
+  // hiding the row and causing a false PGRST116 "not found" → wrong role fallback.
+  const { data: { session } } = await supabase.auth.getSession();
+
+  // If there's no session at all, return safe defaults immediately
+  if (!session) {
+    return { role: "user", tier: "free", username: null, downloadsToday: 0, quotaLimit: FREE_QUOTA };
+  }
+
   const { data, error } = await supabase
     .from("profiles")
     .select("role, tier, username, downloads_today, quota_reset_date")
@@ -68,7 +78,8 @@ async function fetchProfile(userId: string): Promise<ProfileData | null> {
     };
   }
 
-  // Row not found (PGRST116) — new user, try to insert a fresh profile
+  // PGRST116 = row not found. Since we verified a valid session exists above,
+  // this genuinely means no profile row — new user. Insert a fresh one.
   if (error?.code === "PGRST116") {
     const { error: insertErr } = await supabase
       .from("profiles")
@@ -83,7 +94,8 @@ async function fetchProfile(userId: string): Promise<ProfileData | null> {
     return { role: "user", tier: "free", username: null, downloadsToday: 0, quotaLimit: FREE_QUOTA };
   }
 
-  // Any other error (network, RLS, etc.) — return safe defaults, don't sign out
+  // Any other error — log it and return safe defaults without signing out
+  console.error("[AuthContext] fetchProfile unexpected error:", error?.code, error?.message);
   return { role: "user", tier: "free", username: null, downloadsToday: 0, quotaLimit: FREE_QUOTA };
 }
 
