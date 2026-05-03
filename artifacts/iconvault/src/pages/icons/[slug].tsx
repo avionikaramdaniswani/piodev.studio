@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useRoute, Link, useLocation } from "wouter";
-import { Download, Heart, Hash, Layers, Tag, ExternalLink, Code2, Sparkles, UserPlus, X, FileImage, FileText, FileCode2 } from "lucide-react";
+import { Download, Heart, Hash, Layers, Tag, ExternalLink, Code2, Sparkles, UserPlus, X, FileImage, FileText, FileCode2, ChevronDown } from "lucide-react";
 import { jsPDF } from "jspdf";
 
 import { useGetIconBySlug, useDownloadIcon, useToggleLike, useGetSimilarIcons } from "@workspace/api-client-react";
@@ -88,6 +88,7 @@ export default function IconDetail() {
   const [showAnonLimitModal, setShowAnonLimitModal] = useState(false);
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [selectedPngSize, setSelectedPngSize] = useState(64);
+  const [showPngExpanded, setShowPngExpanded] = useState(false);
 
   useEffect(() => {
     if (showDownloadModal) {
@@ -514,38 +515,52 @@ export default function IconDetail() {
               </button>
 
               {/* PNG Option */}
-              <div className="border-[3px] border-foreground p-4" style={{ background: "#F8F8F8" }}>
-                <div className="flex items-center gap-3 mb-3">
+              <div className="border-[3px] border-foreground" style={{ background: "#F8F8F8" }}>
+                <div className="flex items-center gap-3 p-3">
                   <div className="border-[2px] border-foreground p-1.5 flex-shrink-0" style={{ background: "#4DBBFF" }}>
                     <FileImage className="w-5 h-5" />
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <p className="text-base font-black">PNG</p>
-                    <p className="font-mono text-xs text-muted-foreground leading-tight">Raster transparan — pilih ukuran</p>
+                    <p className="font-mono text-xs text-muted-foreground leading-tight">
+                      {showPngExpanded ? "Pilih ukuran di bawah" : `Default ${selectedPngSize}px`}
+                    </p>
                   </div>
+                  <button
+                    onClick={() => setShowPngExpanded(!showPngExpanded)}
+                    className="border-[2px] border-foreground bg-white p-1 hover:bg-gray-100 flex-shrink-0"
+                  >
+                    <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showPngExpanded ? "rotate-180" : ""}`} />
+                  </button>
                 </div>
-                <div className="grid grid-cols-4 gap-1.5 mb-3">
-                  {PNG_SIZES.map((size) => (
-                    <button
-                      key={size}
-                      onClick={() => setSelectedPngSize(size)}
-                      className={`border-[2px] border-foreground py-1.5 font-black font-mono text-xs transition-colors ${
-                        selectedPngSize === size
-                          ? "bg-foreground text-background"
-                          : "bg-white hover:bg-gray-100"
-                      }`}
-                    >
-                      {size}
-                    </button>
-                  ))}
+                {showPngExpanded && (
+                  <div className="border-t-[2px] border-foreground p-3 pt-2">
+                    <div className="grid grid-cols-4 gap-1.5 mb-3">
+                      {PNG_SIZES.map((size) => (
+                        <button
+                          key={size}
+                          onClick={() => setSelectedPngSize(size)}
+                          className={`border-[2px] border-foreground py-1.5 font-black font-mono text-xs transition-colors ${
+                            selectedPngSize === size
+                              ? "bg-foreground text-background"
+                              : "bg-white hover:bg-gray-100"
+                          }`}
+                        >
+                          {size}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div className="border-t-[2px] border-foreground">
+                  <button
+                    onClick={() => handleDownload("png", selectedPngSize)}
+                    className="nb-btn bg-primary w-full flex justify-center items-center gap-2 py-2.5 text-sm border-0"
+                  >
+                    <Download className="w-4 h-4" />
+                    UNDUH PNG {selectedPngSize}×{selectedPngSize}
+                  </button>
                 </div>
-                <button
-                  onClick={() => handleDownload("png", selectedPngSize)}
-                  className="nb-btn bg-primary w-full flex justify-center items-center gap-2 py-2.5 text-sm"
-                >
-                  <Download className="w-4 h-4" />
-                  UNDUH PNG {selectedPngSize}×{selectedPngSize}
-                </button>
               </div>
 
               {/* PDF Option */}
