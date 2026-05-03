@@ -47,7 +47,18 @@ export function Navbar() {
   const SmartAuthButton = ({ size = "md" }: { size?: "sm" | "md" }) => {
     const px = size === "sm" ? "px-3 py-1 text-xs" : "px-4 py-1 text-sm";
     const iconSz = size === "sm" ? "w-3 h-3" : "w-4 h-4";
-    if (loading) return null;
+
+    // Show skeleton while loading instead of nothing
+    if (loading) {
+      return (
+        <div
+          className={`nb-btn ${px} font-black opacity-40 animate-pulse`}
+          style={{ background: "#FFE034", minWidth: size === "sm" ? 72 : 90 }}
+        >
+          &nbsp;
+        </div>
+      );
+    }
 
     if (!user) {
       return (

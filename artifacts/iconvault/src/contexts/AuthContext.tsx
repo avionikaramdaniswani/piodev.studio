@@ -24,16 +24,19 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 async function fetchProfile(userId: string): Promise<{ role: UserRole; tier: UserTier }> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("role, tier")
-    .eq("id", userId)
-    .single();
-  if (error || !data) return { role: "user", tier: "free" };
-  return {
-    role: (data.role as UserRole) ?? "user",
-    tier: (data.tier as UserTier) ?? "free",
-  };
+  try {
+    const { data } = await supabase
+      .from("profiles")
+      .select("role, tier")
+      .eq("id", userId)
+      .single();
+    return {
+      role: (data?.role as UserRole) ?? "user",
+      tier: (data?.tier as UserTier) ?? "free",
+    };
+  } catch {
+    return { role: "user", tier: "free" };
+  }
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -43,33 +46,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [tier, setTier] = useState<UserTier | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadProfile = async (u: User) => {
-    const { role: r, tier: t } = await fetchProfile(u.id);
-    setRole(r);
-    setTier(t);
-  };
-
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) await loadProfile(session.user);
-      setLoading(false);
-    });
-
+    // onAuthStateChange fires INITIAL_SESSION immediately on mount in Supabase v2
+    // so we don't need a separate getSession() call
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
+
       if (session?.user) {
-        await loadProfile(session.user);
+        const { role: r, tier: t } = await fetchProfile(session.user.id);
+        setRole(r);
+        setTier(t);
       } else {
         setRole(null);
         setTier(null);
       }
+
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    // Safety net: if Supabase never responds, stop showing loading after 4s
+    const timeout = setTimeout(() => setLoading(false), 4000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
   }, []);
 
   const signOut = async () => {
