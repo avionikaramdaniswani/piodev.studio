@@ -123,7 +123,7 @@ export default function IconsList() {
           ) : (
             <>
               <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-4 lg:gap-6 mb-12">
-                {iconData?.icons.map((icon, i) => (
+                {(iconData?.icons ?? []).map((icon, i) => (
                   <IconCard key={icon.id} icon={icon} index={i} />
                 ))}
               </div>

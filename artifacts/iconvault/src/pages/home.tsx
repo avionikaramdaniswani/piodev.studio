@@ -62,7 +62,7 @@ export default function Home() {
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-6">
-            {featuredIcons?.slice(0, 8).map((icon, i) => (
+            {(featuredIcons ?? []).slice(0, 8).map((icon, i) => (
               <IconCard key={icon.id} icon={icon} index={i} />
             ))}
           </div>

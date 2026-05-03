@@ -142,7 +142,7 @@ export default function IconDetail() {
           )}
 
           <div className="flex flex-wrap gap-2 mb-8">
-            {icon.tags.map(tag => (
+            {(icon.tags ?? []).map(tag => (
               <span key={tag} className="nb-badge bg-secondary text-sm px-3 py-1">
                 <Hash className="w-3 h-3 inline mr-1" />{tag}
               </span>
