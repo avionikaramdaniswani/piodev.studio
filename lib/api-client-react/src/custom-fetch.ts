@@ -286,8 +286,9 @@ function inferResponseType(response: Response): "json" | "text" | "blob" {
   const mediaType = getMediaType(response.headers);
 
   if (isJsonMediaType(mediaType)) return "json";
-  if (isTextMediaType(mediaType) || mediaType == null) return "text";
-  return "blob";
+  if (isTextMediaType(mediaType)) return "text";
+  // Unknown or missing Content-Type — default to JSON so API responses parse correctly.
+  return "json";
 }
 
 async function parseSuccessBody(
@@ -308,7 +309,16 @@ async function parseSuccessBody(
 
     case "text": {
       const text = await response.text();
-      return text === "" ? null : text;
+      if (text === "") return null;
+      // If Content-Type was text/* but the body looks like JSON, parse it.
+      if (looksLikeJson(text)) {
+        try {
+          return JSON.parse(text);
+        } catch {
+          // fall through and return raw text
+        }
+      }
+      return text;
     }
 
     case "blob":
