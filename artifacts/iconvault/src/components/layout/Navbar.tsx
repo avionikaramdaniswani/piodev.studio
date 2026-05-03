@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Menu, LogIn, User, Shield, Home, Grid, Wrench, LogOut, Sparkles, X } from "lucide-react";
+import { Menu, LogIn, User, Shield, Home, Grid, Wrench, LogOut, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
@@ -75,8 +75,8 @@ export function Navbar() {
 
     const initials = user.email?.slice(0, 2).toUpperCase() ?? "??";
     return (
-      <Link href="/profil" className={`nb-btn ${px} font-black flex items-center gap-2`} style={{ background: "white" }}>
-        <span className="w-5 h-5 border-[2px] border-foreground flex items-center justify-center font-black text-[9px] shrink-0" style={{ background: "#4DBBFF" }}>
+      <Link href="/profil" className={`nb-btn ${px} font-black flex items-center gap-2`} style={{ background: "#4DBBFF" }}>
+        <span className="w-5 h-5 border-[2px] border-foreground flex items-center justify-center font-black text-[9px] shrink-0" style={{ background: "white" }}>
           {initials}
         </span>
         PROFIL
@@ -94,7 +94,7 @@ export function Navbar() {
       <div className="flex flex-col h-full">
         {/* Sidebar header */}
         <div className="border-b-[3px] border-foreground pb-5 mb-5">
-          <div className="flex items-start justify-between mb-4">
+          <div className="mb-4">
             <Link href="/" onClick={close} className="flex flex-col">
               <div className="relative">
                 <div className="absolute inset-0 bg-primary translate-x-0.5 translate-y-0.5" />
@@ -102,9 +102,6 @@ export function Navbar() {
               </div>
               <span className="font-mono text-[9px] font-bold mt-1 tracking-widest">piodev.studio</span>
             </Link>
-            <button onClick={close} className="nb-btn p-1.5 bg-secondary">
-              <X className="w-4 h-4" />
-            </button>
           </div>
 
           {/* User card — shown when logged in */}
