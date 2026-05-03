@@ -46,29 +46,42 @@ interface ProfileData {
   quotaLimit: number;
 }
 
-async function fetchProfile(userId: string): Promise<ProfileData | null> {
-  // Always get a fresh session first. This ensures the Supabase client's internal
-  // auth state is up-to-date (including token refresh if expired) before we query.
-  // Without this, on page refresh the RLS policy auth.uid() may return null,
-  // hiding the row and causing a false PGRST116 "not found" → wrong role fallback.
-  const { data: { session } } = await supabase.auth.getSession();
+async function fetchProfile(accessToken: string): Promise<ProfileData | null> {
+  // Fetch profile via the API server instead of querying Supabase directly.
+  // This avoids Supabase client RLS timing issues on page refresh where
+  // auth.uid() may return null before the session is fully initialized,
+  // causing the profile row to be hidden and role to fallback to "user".
+  try {
+    const res = await fetch("/api/me", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
 
-  // If there's no session at all, return safe defaults immediately
-  if (!session) {
-    return { role: "user", tier: "free", username: null, downloadsToday: 0, quotaLimit: FREE_QUOTA };
-  }
+    if (!res.ok) {
+      if (res.status === 404) {
+        // Genuine new user — profile not found, return safe defaults
+        return { role: "user", tier: "free", username: null, downloadsToday: 0, quotaLimit: FREE_QUOTA };
+      }
+      if (res.status === 401) {
+        // Token invalid — ghost session
+        return null;
+      }
+      console.error("[AuthContext] fetchProfile API error:", res.status);
+      return { role: "user", tier: "free", username: null, downloadsToday: 0, quotaLimit: FREE_QUOTA };
+    }
 
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("role, tier, username, downloads_today, quota_reset_date")
-    .eq("id", userId)
-    .single();
+    const data = await res.json() as {
+      role: string;
+      tier: string;
+      username: string | null;
+      downloadsToday: number;
+      quotaResetDate: string | null;
+    };
 
-  if (!error && data) {
     const tier: UserTier = (data.tier as UserTier) ?? "free";
     const today = new Date().toISOString().split("T")[0];
-    const isToday = data.quota_reset_date === today;
-    const downloadsToday = isToday ? (data.downloads_today ?? 0) : 0;
+    const isToday = data.quotaResetDate === today;
+    const downloadsToday = isToday ? (data.downloadsToday ?? 0) : 0;
+
     return {
       role: (data.role as UserRole) ?? "user",
       tier,
@@ -76,27 +89,10 @@ async function fetchProfile(userId: string): Promise<ProfileData | null> {
       downloadsToday,
       quotaLimit: tier === "plus" ? -1 : FREE_QUOTA,
     };
-  }
-
-  // PGRST116 = row not found. Since we verified a valid session exists above,
-  // this genuinely means no profile row — new user. Insert a fresh one.
-  if (error?.code === "PGRST116") {
-    const { error: insertErr } = await supabase
-      .from("profiles")
-      .insert({ id: userId, role: "user", tier: "free" });
-
-    if (insertErr) {
-      // FK violation (23503) = account deleted from auth.users — ghost session
-      if (insertErr.code === "23503") return null;
-      // Any other insert error — fall through to safe defaults
-    }
-
+  } catch (err) {
+    console.error("[AuthContext] fetchProfile network error:", err);
     return { role: "user", tier: "free", username: null, downloadsToday: 0, quotaLimit: FREE_QUOTA };
   }
-
-  // Any other error — log it and return safe defaults without signing out
-  console.error("[AuthContext] fetchProfile unexpected error:", error?.code, error?.message);
-  return { role: "user", tier: "free", username: null, downloadsToday: 0, quotaLimit: FREE_QUOTA };
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -130,8 +126,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshProfile = useCallback(async () => {
     const { data: { session: s } } = await supabase.auth.getSession();
-    if (!s?.user) return;
-    const profile = await fetchProfile(s.user.id);
+    if (!s?.access_token) return;
+    const profile = await fetchProfile(s.access_token);
     if (!mountedRef.current) return;
     if (profile !== null) applyProfile(profile);
   }, [applyProfile]);
@@ -181,7 +177,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             return s?.access_token ?? null;
           });
 
-          const profile = await fetchProfile(newSession.user.id);
+          const profile = await fetchProfile(newSession.access_token);
           if (!mountedRef.current) return;
 
           if (profile === null) {
