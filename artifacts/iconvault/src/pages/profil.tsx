@@ -1,5 +1,9 @@
+import { useState } from "react";
 import { useLocation } from "wouter";
-import { LogOut, Mail, Shield, Calendar, Key, Sparkles, Check } from "lucide-react";
+import {
+  LogOut, Mail, Shield, Calendar, Key,
+  Sparkles, Check, User, Lock,
+} from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { RoleGuard } from "@/components/shared/RoleGuard";
 import { TierBadge } from "@/components/shared/TierBadge";
@@ -24,17 +28,125 @@ const FREE_PERKS = [
   "Semua developer tools",
 ];
 
-function ProfilContent() {
-  const { user, role, tier, signOut } = useAuth();
-  const [, navigate] = useLocation();
+type TabId = "akun" | "langganan" | "keamanan";
 
-  const initials = user?.email?.slice(0, 2).toUpperCase() ?? "??";
+const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
+  { id: "akun",       label: "AKUN",        icon: <User className="w-4 h-4" /> },
+  { id: "langganan",  label: "LANGGANAN",   icon: <Sparkles className="w-4 h-4" /> },
+  { id: "keamanan",   label: "KEAMANAN",    icon: <Lock className="w-4 h-4" /> },
+];
+
+/* ── Tab: Akun ─────────────────────────────────────────── */
+function TabAkun() {
+  const { user, role } = useAuth();
   const roleMeta = ROLE_META[role ?? "user"];
-  const isPlus = tier === "plus";
-
   const joinedAt = user?.created_at
     ? new Date(user.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
-    : "-";
+    : "–";
+
+  const rows = [
+    { icon: <Mail className="w-4 h-4" />,     label: "EMAIL",           value: user?.email },
+    { icon: <Shield className="w-4 h-4" />,   label: "PERAN",           value: roleMeta.label.toUpperCase() },
+    { icon: <Calendar className="w-4 h-4" />, label: "BERGABUNG SEJAK", value: joinedAt },
+    { icon: <Key className="w-4 h-4" />,      label: "USER ID",         value: user?.id, mono: true },
+  ];
+
+  return (
+    <div className="flex flex-col gap-1">
+      {rows.map(r => (
+        <div key={r.label} className="flex items-start gap-4 py-4 border-b-[2px] border-foreground/10 last:border-0">
+          <div className="opacity-40 mt-0.5 shrink-0">{r.icon}</div>
+          <div className="min-w-0 flex-1">
+            <p className="font-mono text-[10px] opacity-40 mb-0.5">{r.label}</p>
+            <p className={`font-bold break-all ${r.mono ? "font-mono text-xs opacity-60" : ""}`}>{r.value}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ── Tab: Langganan ────────────────────────────────────── */
+function TabLangganan() {
+  const { tier } = useAuth();
+  const isPlus = tier === "plus";
+
+  if (isPlus) {
+    return (
+      <div className="flex flex-col gap-4">
+        <div className="border-[3px] border-foreground p-5 shadow-[4px_4px_0_#0A0A0A]" style={{ background: "#FFE034" }}>
+          <p className="font-black text-xl flex items-center gap-2 mb-1">
+            <Sparkles className="w-5 h-5" /> KAMU PENGGUNA PLUS!
+          </p>
+          <p className="font-mono text-xs opacity-70">Nikmati semua fitur premium PioDev.studio</p>
+        </div>
+        <div className="border-[3px] border-foreground p-5">
+          <p className="font-black text-sm mb-3 opacity-60">FITUR AKTIF</p>
+          <ul className="flex flex-col gap-2.5">
+            {PLUS_PERKS.map(p => (
+              <li key={p} className="flex items-center gap-3 font-mono text-sm">
+                <span className="w-5 h-5 border-[2px] border-foreground flex items-center justify-center shrink-0" style={{ background: "#00E676" }}>
+                  <Check className="w-3 h-3" />
+                </span>
+                {p}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Free */}
+        <div className="border-[3px] border-foreground p-5">
+          <div className="flex items-center justify-between mb-4">
+            <p className="font-black text-lg">FREE</p>
+            <TierBadge tier="free" size="sm" />
+          </div>
+          <ul className="flex flex-col gap-2 mb-4">
+            {FREE_PERKS.map(p => (
+              <li key={p} className="flex items-start gap-2 font-mono text-xs opacity-60">
+                <Check className="w-3 h-3 mt-0.5 shrink-0" /> {p}
+              </li>
+            ))}
+          </ul>
+          <p className="font-black text-2xl">Gratis</p>
+        </div>
+        {/* Plus */}
+        <div className="border-[3px] border-foreground p-5 shadow-[4px_4px_0_#0A0A0A]" style={{ background: "#FFE034" }}>
+          <div className="flex items-center justify-between mb-4">
+            <p className="font-black text-lg">PLUS</p>
+            <TierBadge tier="plus" size="sm" />
+          </div>
+          <ul className="flex flex-col gap-2 mb-4">
+            {PLUS_PERKS.map(p => (
+              <li key={p} className="flex items-start gap-2 font-mono text-xs">
+                <Sparkles className="w-3 h-3 mt-0.5 shrink-0" /> {p}
+              </li>
+            ))}
+          </ul>
+          <p className="font-black text-2xl">
+            Rp 49.000<span className="font-mono text-sm font-normal">/bln</span>
+          </p>
+        </div>
+      </div>
+      <button
+        className="nb-btn py-3 font-black flex items-center justify-center gap-2 w-full"
+        style={{ background: "#FFE034" }}
+      >
+        <Sparkles className="w-5 h-5" /> UPGRADE KE PLUS
+      </button>
+    </div>
+  );
+}
+
+/* ── Tab: Keamanan ─────────────────────────────────────── */
+function TabKeamanan() {
+  const { signOut } = useAuth();
+  const [, navigate] = useLocation();
 
   const handleSignOut = async () => {
     await signOut();
@@ -42,128 +154,110 @@ function ProfilContent() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto py-8 flex flex-col gap-6">
-      {/* Header card */}
-      <div className="nb-card overflow-hidden">
-        <div className="h-3 w-full" style={{ background: isPlus ? "#FFE034" : "#4DBBFF" }} />
-        <div className="p-6 flex flex-col sm:flex-row items-start sm:items-center gap-5">
-          <div
-            className="w-20 h-20 border-[4px] border-foreground shadow-[4px_4px_0_#0A0A0A] flex items-center justify-center text-3xl font-black shrink-0"
-            style={{ background: "#4DBBFF" }}
-          >
-            {initials}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-mono text-sm opacity-50 mb-2 truncate">{user?.email}</p>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span
-                className="font-black text-sm px-3 py-1 border-[3px] border-foreground shadow-[2px_2px_0_#0A0A0A]"
-                style={{ background: roleMeta.bg, color: roleMeta.color }}
-              >
-                {roleMeta.label.toUpperCase()}
-              </span>
-              <TierBadge tier={tier} size="md" />
-            </div>
-          </div>
+    <div className="flex flex-col gap-5">
+      {/* Password section — placeholder for future */}
+      <div className="border-[3px] border-foreground p-5 flex flex-col gap-3">
+        <div className="flex items-center gap-2 border-b-[2px] border-foreground/10 pb-3">
+          <Lock className="w-4 h-4 opacity-40" />
+          <p className="font-black">KATA SANDI</p>
         </div>
+        <p className="font-mono text-xs opacity-50">
+          Kelola kata sandi akun kamu. Perubahan kata sandi dikirim via email yang terdaftar.
+        </p>
+        <button
+          className="nb-btn py-2 px-4 font-black text-sm self-start"
+          style={{ background: "#4DBBFF" }}
+          onClick={() => alert("Fitur ganti password segera hadir!")}
+        >
+          GANTI KATA SANDI
+        </button>
       </div>
 
-      {/* Tier card */}
-      <div className="nb-card overflow-hidden">
-        <div className="p-6">
-          <h2 className="font-black text-xl border-b-[3px] border-foreground pb-3 mb-4 flex items-center gap-2">
-            <Sparkles className="w-5 h-5" /> PAKET LANGGANAN
-          </h2>
-
-          {isPlus ? (
-            <div className="flex flex-col gap-3">
-              <div className="border-[3px] border-foreground p-4 shadow-[4px_4px_0_#0A0A0A]" style={{ background: "#FFE034" }}>
-                <p className="font-black text-lg flex items-center gap-2">
-                  <Sparkles className="w-5 h-5" /> KAMU PENGGUNA PLUS!
-                </p>
-                <p className="font-mono text-xs mt-1 opacity-70">Nikmati semua fitur premium PioDev.studio</p>
-              </div>
-              <ul className="flex flex-col gap-2">
-                {PLUS_PERKS.map(p => (
-                  <li key={p} className="flex items-center gap-2 font-mono text-sm">
-                    <Check className="w-4 h-4 text-green-600 shrink-0" /> {p}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Free */}
-                <div className="border-[3px] border-foreground p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="font-black">FREE</p>
-                    <TierBadge tier="free" size="xs" />
-                  </div>
-                  <ul className="flex flex-col gap-1.5">
-                    {FREE_PERKS.map(p => (
-                      <li key={p} className="flex items-start gap-2 font-mono text-xs opacity-70">
-                        <Check className="w-3 h-3 mt-0.5 shrink-0" /> {p}
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="font-black text-lg mt-3">Gratis</p>
-                </div>
-                {/* Plus */}
-                <div className="border-[3px] border-foreground p-4 shadow-[4px_4px_0_#0A0A0A]" style={{ background: "#FFE034" }}>
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="font-black">PLUS</p>
-                    <TierBadge tier="plus" size="xs" />
-                  </div>
-                  <ul className="flex flex-col gap-1.5">
-                    {PLUS_PERKS.map(p => (
-                      <li key={p} className="flex items-start gap-2 font-mono text-xs">
-                        <Sparkles className="w-3 h-3 mt-0.5 shrink-0" /> {p}
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="font-black text-lg mt-3">Rp 49.000<span className="font-mono text-xs font-normal">/bln</span></p>
-                </div>
-              </div>
-              <button
-                className="nb-btn py-3 font-black flex items-center justify-center gap-2 w-full"
-                style={{ background: "#FFE034" }}
-              >
-                <Sparkles className="w-5 h-5" /> UPGRADE KE PLUS
-              </button>
-            </div>
-          )}
+      {/* Danger zone */}
+      <div className="border-[3px] border-foreground p-5 flex flex-col gap-3" style={{ borderColor: "#FF6B35" }}>
+        <div className="flex items-center gap-2 border-b-[2px] border-foreground/10 pb-3">
+          <LogOut className="w-4 h-4 opacity-40" />
+          <p className="font-black">SESI AKTIF</p>
         </div>
-      </div>
-
-      {/* Info akun */}
-      <div className="nb-card p-6 flex flex-col gap-3">
-        <h2 className="font-black text-xl border-b-[3px] border-foreground pb-3">INFORMASI AKUN</h2>
-        {[
-          { icon: <Mail className="w-4 h-4 opacity-40" />, label: "EMAIL", value: user?.email },
-          { icon: <Shield className="w-4 h-4 opacity-40" />, label: "PERAN", value: roleMeta.label.toUpperCase() },
-          { icon: <Calendar className="w-4 h-4 opacity-40" />, label: "BERGABUNG SEJAK", value: joinedAt },
-          { icon: <Key className="w-4 h-4 opacity-40" />, label: "USER ID", value: user?.id, mono: true, small: true },
-        ].map(row => (
-          <div key={row.label} className="flex items-start gap-3 py-2.5 border-b-[2px] border-foreground/10 last:border-0">
-            <div className="mt-0.5 shrink-0">{row.icon}</div>
-            <div className="min-w-0">
-              <p className="font-mono text-[10px] opacity-40 mb-0.5">{row.label}</p>
-              <p className={`font-bold ${row.small ? "font-mono text-xs opacity-60 break-all" : ""}`}>{row.value}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Aksi */}
-      <div className="nb-card p-6">
+        <p className="font-mono text-xs opacity-50">
+          Keluar dari akun di perangkat ini. Kamu perlu masuk kembali untuk mengakses fitur member.
+        </p>
         <button
           onClick={handleSignOut}
-          className="nb-btn py-3 px-6 font-black flex items-center gap-2"
+          className="nb-btn py-2 px-4 font-black text-sm flex items-center gap-2 self-start"
           style={{ background: "#FF6B35", color: "white" }}
         >
           <LogOut className="w-4 h-4" /> KELUAR DARI AKUN
         </button>
+      </div>
+    </div>
+  );
+}
+
+/* ── Main page ─────────────────────────────────────────── */
+function ProfilContent() {
+  const { user, role, tier } = useAuth();
+  const [activeTab, setActiveTab] = useState<TabId>("akun");
+
+  const initials = user?.email?.slice(0, 2).toUpperCase() ?? "??";
+  const roleMeta = ROLE_META[role ?? "user"];
+  const isPlus = tier === "plus";
+
+  return (
+    <div className="max-w-2xl mx-auto py-8 flex flex-col gap-6">
+      {/* Profile header */}
+      <div className="nb-card overflow-hidden">
+        <div className="h-3 w-full" style={{ background: isPlus ? "#FFE034" : "#4DBBFF" }} />
+        <div className="p-6 flex items-center gap-5">
+          <div
+            className="w-16 h-16 border-[4px] border-foreground shadow-[4px_4px_0_#0A0A0A] flex items-center justify-center text-2xl font-black shrink-0"
+            style={{ background: "#4DBBFF" }}
+          >
+            {initials}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="font-mono text-sm opacity-50 truncate mb-2">{user?.email}</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span
+                className="font-black text-xs px-2 py-1 border-[2px] border-foreground shadow-[2px_2px_0_#0A0A0A]"
+                style={{ background: roleMeta.bg, color: roleMeta.color }}
+              >
+                {roleMeta.label.toUpperCase()}
+              </span>
+              <TierBadge tier={tier} size="sm" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex flex-col gap-0">
+        {/* Tab bar */}
+        <div className="flex border-[3px] border-foreground overflow-hidden shadow-[4px_4px_0_#0A0A0A]">
+          {TABS.map((tab, i) => {
+            const active = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 font-black text-sm transition-all
+                  ${i > 0 ? "border-l-[3px] border-foreground" : ""}
+                  ${active ? "" : "opacity-50 hover:opacity-80"}`}
+                style={{ background: active ? "#FFE034" : "transparent" }}
+              >
+                {tab.icon}
+                <span className="hidden sm:inline">{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Tab content */}
+        <div className="border-[3px] border-t-0 border-foreground p-6" style={{ background: "var(--card)" }}>
+          {activeTab === "akun"      && <TabAkun />}
+          {activeTab === "langganan" && <TabLangganan />}
+          {activeTab === "keamanan"  && <TabKeamanan />}
+        </div>
       </div>
     </div>
   );
