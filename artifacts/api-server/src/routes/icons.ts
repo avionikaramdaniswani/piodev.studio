@@ -10,6 +10,7 @@ import {
   ToggleLikeParams,
   GetSimilarIconsParams,
 } from "@workspace/api-zod";
+import { requireAuth, requireRole } from "../middlewares/requireAuth";
 
 const router = Router();
 
@@ -28,6 +29,18 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 const getColor = (cat: string) => CATEGORY_COLORS[cat] ?? "#FFE034";
 
+function sanitizeSvg(svg: string): string {
+  return svg
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/\son\w+\s*=\s*(?:"[^"]*"|'[^']*')/gi, "")
+    .replace(/\bhref\s*=\s*(?:"javascript:[^"]*"|'javascript:[^']*')/gi, "")
+    .replace(
+      /\bxlink:href\s*=\s*(?:"https?:\/\/[^"]*"|'https?:\/\/[^']*')/gi,
+      "",
+    )
+    .trim();
+}
+
 // GET /icons
 router.get("/", async (req, res) => {
   const parsed = ListIconsQueryParams.safeParse(req.query);
@@ -42,8 +55,8 @@ router.get("/", async (req, res) => {
     conditions.push(
       or(
         ilike(iconsTable.name, `%${search}%`),
-        ilike(iconsTable.category, `%${search}%`)
-      )
+        ilike(iconsTable.category, `%${search}%`),
+      ),
     );
   }
   if (category) conditions.push(eq(iconsTable.category, category));
@@ -74,14 +87,21 @@ router.get("/", async (req, res) => {
   });
 });
 
-// POST /icons
-router.post("/", async (req, res) => {
+// POST /icons — requires staff or admin
+router.post("/", requireAuth, requireRole("staff"), async (req, res) => {
   const parsed = CreateIconBody.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ error: parsed.error.message });
   }
 
-  const { name, slug, description, svgContent, category, tags, style, license } = parsed.data;
+  const { name, slug, description, svgContent, category, tags, style, license } =
+    parsed.data;
+
+  const cleanSvg = sanitizeSvg(svgContent);
+
+  if (!cleanSvg.toLowerCase().includes("<svg")) {
+    return res.status(400).json({ error: "Invalid SVG content" });
+  }
 
   const [icon] = await db
     .insert(iconsTable)
@@ -89,7 +109,7 @@ router.post("/", async (req, res) => {
       name,
       slug,
       description,
-      svgContent,
+      svgContent: cleanSvg,
       category,
       tags: tags ?? [],
       style,

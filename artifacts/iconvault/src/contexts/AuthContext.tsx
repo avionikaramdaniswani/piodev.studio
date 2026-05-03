@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
+import { setAuthTokenGetter } from "@workspace/api-client-react";
 
 export type UserRole = "user" | "staff" | "admin";
 export type UserTier = "free" | "plus";
@@ -45,8 +46,7 @@ interface ProfileData {
   quotaLimit: number;
 }
 
-async function fetchProfile(userId: string): Promise<ProfileData> {
-  // Langkah 1: coba query lengkap dengan semua kolom
+async function fetchProfile(userId: string): Promise<ProfileData | null> {
   try {
     const { data, error } = await supabase
       .from("profiles")
@@ -68,7 +68,7 @@ async function fetchProfile(userId: string): Promise<ProfileData> {
       };
     }
 
-    // Langkah 2: kolom baru mungkin belum ada — coba query minimal (role + tier saja)
+    // Try minimal query if full query fails
     const { data: minimal, error: minErr } = await supabase
       .from("profiles")
       .select("role, tier")
@@ -86,16 +86,31 @@ async function fetchProfile(userId: string): Promise<ProfileData> {
       };
     }
 
-    // Langkah 3: row belum ada sama sekali — buat dulu
-    await supabase
+    // Profile row doesn't exist — create it
+    const { error: upsertErr } = await supabase
       .from("profiles")
       .upsert({ id: userId, role: "user", tier: "free" }, { onConflict: "id" });
 
+    if (upsertErr) {
+      // If we can't create a profile, the account may have been removed
+      return null;
+    }
+
     return { role: "user", tier: "free", username: null, downloadsToday: 0, quotaLimit: FREE_QUOTA };
   } catch {
-    return { role: "user", tier: "free", username: null, downloadsToday: 0, quotaLimit: FREE_QUOTA };
+    return null;
   }
 }
+
+const clearState = {
+  user: null as User | null,
+  session: null as Session | null,
+  role: null as UserRole | null,
+  tier: null as UserTier | null,
+  username: null as string | null,
+  downloadsToday: 0,
+  quotaLimit: FREE_QUOTA,
+};
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -115,12 +130,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setQuotaLimit(p.quotaLimit);
   };
 
-  const refreshProfile = useCallback(async () => {
-    const { data: { user: currentUser } } = await supabase.auth.getUser();
-    if (!currentUser) return;
-    const profile = await fetchProfile(currentUser.id);
-    applyProfile(profile);
+  const clearAuth = useCallback(() => {
+    setUser(clearState.user);
+    setSession(clearState.session);
+    setRole(clearState.role);
+    setTier(clearState.tier);
+    setUsername(clearState.username);
+    setDownloadsToday(clearState.downloadsToday);
+    setQuotaLimit(clearState.quotaLimit);
+    setAuthTokenGetter(null);
   }, []);
+
+  const refreshProfile = useCallback(async () => {
+    // Use getUser() (server-validated) instead of cached session
+    const { data: { user: currentUser }, error } = await supabase.auth.getUser();
+    if (error || !currentUser) {
+      await supabase.auth.signOut();
+      clearAuth();
+      return;
+    }
+    const profile = await fetchProfile(currentUser.id);
+    if (!profile) {
+      // Profile couldn't be found or created — account likely deleted
+      await supabase.auth.signOut();
+      clearAuth();
+      return;
+    }
+    applyProfile(profile);
+  }, [clearAuth]);
 
   const updateUsername = useCallback(async (newUsername: string): Promise<ProfileUpdateResult> => {
     const cleanUsername = newUsername.trim().toLowerCase().replace(/[^a-z0-9_]/g, "");
@@ -128,8 +165,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!cleanUsername) return { error: "Nama pengguna tidak boleh kosong." };
     if (cleanUsername.length < 3) return { error: "Nama pengguna minimal 3 karakter." };
 
-    const { data: { user: currentUser } } = await supabase.auth.getUser();
-    if (!currentUser) return { error: "Tidak login" };
+    const { data: { user: currentUser }, error: userErr } = await supabase.auth.getUser();
+    if (userErr || !currentUser) return { error: "Tidak login" };
 
     const { error } = await supabase
       .from("profiles")
@@ -146,39 +183,91 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    let mounted = true;
 
-      if (session?.user) {
-        const profile = await fetchProfile(session.user.id);
-        applyProfile(profile);
-      } else {
-        setRole(null);
-        setTier(null);
-        setUsername(null);
-        setDownloadsToday(0);
-        setQuotaLimit(FREE_QUOTA);
+    // Register auth token getter so API calls include the Supabase JWT
+    setAuthTokenGetter(async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      return session?.access_token ?? null;
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+      if (!mounted) return;
+
+      // On sign out or token refresh failure → force clear
+      if (event === "SIGNED_OUT") {
+        clearAuth();
+        setLoading(false);
+        return;
       }
 
+      // On initial load or sign in, validate server-side with getUser()
+      if (event === "INITIAL_SESSION" || event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+        if (!newSession?.user) {
+          clearAuth();
+          setLoading(false);
+          return;
+        }
+
+        // Server-side validation — if user was deleted this will fail
+        const { data: { user: serverUser }, error: userErr } = await supabase.auth.getUser();
+
+        if (!mounted) return;
+
+        if (userErr || !serverUser) {
+          // Account no longer exists on Supabase — force sign out
+          await supabase.auth.signOut();
+          clearAuth();
+          setLoading(false);
+          return;
+        }
+
+        setSession(newSession);
+        setUser(serverUser);
+
+        // Re-register token getter with fresh session
+        setAuthTokenGetter(async () => {
+          const { data: { session: s } } = await supabase.auth.getSession();
+          return s?.access_token ?? null;
+        });
+
+        const profile = await fetchProfile(serverUser.id);
+        if (!mounted) return;
+
+        if (!profile) {
+          // Profile missing even after attempted creation — account inconsistent, sign out
+          await supabase.auth.signOut();
+          clearAuth();
+          setLoading(false);
+          return;
+        }
+
+        applyProfile(profile);
+        setLoading(false);
+        return;
+      }
+
+      // USER_UPDATED or other events — update session state only
+      setSession(newSession);
+      setUser(newSession?.user ?? null);
+      if (!newSession?.user) clearAuth();
       setLoading(false);
     });
 
-    const timeout = setTimeout(() => setLoading(false), 4000);
+    const timeout = setTimeout(() => {
+      if (mounted) setLoading(false);
+    }, 5000);
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
       clearTimeout(timeout);
     };
-  }, []);
+  }, [clearAuth]);
 
   const signOut = async () => {
     await supabase.auth.signOut();
-    setRole(null);
-    setTier(null);
-    setUsername(null);
-    setDownloadsToday(0);
-    setQuotaLimit(FREE_QUOTA);
+    clearAuth();
   };
 
   return (
