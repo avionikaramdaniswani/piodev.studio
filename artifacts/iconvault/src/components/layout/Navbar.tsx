@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
-import { Menu, LogIn, User, Shield, Home, Grid, Wrench, LogOut, Sparkles } from "lucide-react";
+import { Menu, LogIn, User, Shield, Home, Grid, Wrench, LogOut, Sparkles, X } from "lucide-react";
 import { useState } from "react";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetClose, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
 import { TierBadge } from "@/components/shared/TierBadge";
 
@@ -94,7 +94,7 @@ export function Navbar() {
       <div className="flex flex-col h-full">
         {/* Sidebar header */}
         <div className="border-b-[3px] border-foreground pb-5 mb-5">
-          <div className="mb-4">
+          <div className="flex items-start justify-between mb-4">
             <Link href="/" onClick={close} className="flex flex-col">
               <div className="relative">
                 <div className="absolute inset-0 bg-primary translate-x-0.5 translate-y-0.5" />
@@ -102,6 +102,11 @@ export function Navbar() {
               </div>
               <span className="font-mono text-[9px] font-bold mt-1 tracking-widest">piodev.studio</span>
             </Link>
+            <SheetClose asChild>
+              <button className="nb-btn p-2 border-[3px] border-foreground shadow-[2px_2px_0_#0A0A0A]" style={{ background: "#FFE034" }}>
+                <X className="w-4 h-4" />
+              </button>
+            </SheetClose>
           </div>
 
           {/* User card — shown when logged in */}
