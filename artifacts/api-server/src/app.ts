@@ -83,6 +83,15 @@ app.use("/api", (req: Request, res: Response, next: NextFunction) => {
   }
 });
 
+if (process.env.NODE_ENV !== "production") {
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    next();
+  });
+}
+
 app.use("/api", router);
 
 export default app;
