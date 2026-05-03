@@ -21,12 +21,15 @@ function applyColorToSvg(svgContent: string, color: string): string {
     .replace(/\bfill:\s*(?!none\b)[^;"}]*/gi, `fill:${color}`)
     .replace(/\bstroke:\s*(?!none\b)[^;"}]*/gi, `stroke:${color}`)
     .replace(/<svg([^>]*)>/, (_match, attrs) => {
-      // Strip any existing style and fill on root SVG, then re-inject chosen color.
-      // Setting fill here means paths with NO explicit fill attribute will inherit it.
+      // If the original root SVG had fill="none" (stroke-based/outline icon),
+      // preserve it so child paths don't accidentally inherit a fill color.
+      // Only inject fill color for fill-based icons (no fill="none" on root).
+      const rootHadFillNone = /\bfill="none"/i.test(attrs);
       const cleaned = attrs
         .replace(/\s*style="[^"]*"/i, "")
         .replace(/\s*\bfill="[^"]*"/i, "");
-      return `<svg${cleaned} fill="${color}" style="color:${color}">`;
+      const rootFill = rootHadFillNone ? "none" : color;
+      return `<svg${cleaned} fill="${rootFill}" style="color:${color}">`;
     });
 }
 
