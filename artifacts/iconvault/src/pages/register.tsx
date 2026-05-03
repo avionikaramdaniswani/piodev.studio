@@ -11,7 +11,6 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,32 +29,9 @@ export default function Register() {
     if (error) {
       setError("Gagal membuat akun. Coba lagi.");
     } else {
-      setSuccess(true);
+      navigate("/");
     }
   };
-
-  if (success) {
-    return (
-      <div className="min-h-[70vh] flex items-center justify-center py-12">
-        <div className="w-full max-w-md">
-          <div className="nb-card p-8 text-center" style={{ background: "#FFE034" }}>
-            <div className="text-5xl mb-4">✓</div>
-            <h2 className="font-black text-2xl mb-2">CEK EMAIL KAMU!</h2>
-            <p className="font-mono text-sm mb-6">
-              Kami kirim link konfirmasi ke <strong>{email}</strong>. Klik link tersebut untuk mengaktifkan akun kamu.
-            </p>
-            <button
-              onClick={() => navigate("/login")}
-              className="nb-btn px-6 py-2"
-              style={{ background: "white" }}
-            >
-              KE HALAMAN MASUK
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-[70vh] flex items-center justify-center py-12">
