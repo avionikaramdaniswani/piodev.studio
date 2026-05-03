@@ -11,6 +11,20 @@ import { supabase } from "@/lib/supabase";
 
 const ACCENT_COLORS = ['#FFE034', '#FF6B9D', '#4DBBFF', '#00E676', '#FF6B35'];
 
+/** Apply a chosen color to an SVG string, replacing ALL hardcoded fill/stroke values. */
+function applyColorToSvg(svgContent: string, color: string): string {
+  return svgContent
+    .replace(/currentColor/gi, color)
+    .replace(/\bfill="(?!none\b)([^"]*)"/gi, `fill="${color}"`)
+    .replace(/\bstroke="(?!none\b)([^"]*)"/gi, `stroke="${color}"`)
+    .replace(/\bfill:\s*(?!none\b)[^;"}]*/gi, `fill:${color}`)
+    .replace(/\bstroke:\s*(?!none\b)[^;"}]*/gi, `stroke:${color}`)
+    .replace(/<svg([^>]*)>/, (_match, attrs) => {
+      const cleaned = attrs.replace(/\s*style="[^"]*"/i, "");
+      return `<svg${cleaned} style="color:${color}">`;
+    });
+}
+
 export default function IconDetail() {
   const [, params] = useRoute("/icons/:slug");
   const slug = params?.slug || "";
@@ -97,24 +111,7 @@ export default function IconDetail() {
       // Refresh profile quota display
       if (user) await refreshProfile();
 
-      // Apply selected color to the SVG being downloaded.
-      // Strategy: replace all fill/stroke attribute values (except "none") with the chosen color,
-      // then also replace currentColor references and inject a root style.
-      const coloredSvg = icon.svgContent
-        // Replace currentColor keyword
-        .replace(/currentColor/gi, iconColor)
-        // Replace hardcoded fill colors (e.g. fill="#000", fill="black") but keep fill="none"
-        .replace(/\bfill="(?!none\b)([^"]*)"/gi, `fill="${iconColor}"`)
-        // Replace hardcoded stroke colors (e.g. stroke="#000") but keep stroke="none"
-        .replace(/\bstroke="(?!none\b)([^"]*)"/gi, `stroke="${iconColor}"`)
-        // Replace inline style fill/stroke declarations
-        .replace(/\bfill:\s*(?!none\b)[^;"}]*/gi, `fill:${iconColor}`)
-        .replace(/\bstroke:\s*(?!none\b)[^;"}]*/gi, `stroke:${iconColor}`)
-        // Update the root <svg> element style
-        .replace(/<svg([^>]*)>/, (_match, attrs) => {
-          const cleaned = attrs.replace(/\s*style="[^"]*"/i, "");
-          return `<svg${cleaned} style="color:${iconColor}">`;
-        });
+      const coloredSvg = applyColorToSvg(icon.svgContent, iconColor);
 
       // Trigger the actual file download
       const blob = new Blob([coloredSvg], { type: "image/svg+xml" });
@@ -276,8 +273,8 @@ export default function IconDetail() {
               style={{ backgroundColor: previewBg, color: iconColor }}
             >
               <div
-                className="w-full h-full max-w-[160px] max-h-[160px] [&>svg]:w-full [&>svg]:h-full [&>svg]:stroke-current [&>svg_*]:stroke-current"
-                dangerouslySetInnerHTML={{ __html: icon.svgContent }}
+                className="w-full h-full max-w-[160px] max-h-[160px] [&>svg]:w-full [&>svg]:h-full"
+                dangerouslySetInnerHTML={{ __html: applyColorToSvg(icon.svgContent, iconColor) }}
               />
             </div>
           </div>
