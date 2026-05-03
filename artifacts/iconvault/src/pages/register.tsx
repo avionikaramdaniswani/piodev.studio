@@ -1,20 +1,21 @@
 import { useState } from "react";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { supabase } from "@/lib/supabase";
-import { Eye, EyeOff, UserPlus } from "lucide-react";
+import { Eye, EyeOff, UserPlus, Mail, CheckCircle } from "lucide-react";
 
 export default function Register() {
-  const [, navigate] = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [registered, setRegistered] = useState(false);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
     if (password !== confirmPassword) {
       setError("Password tidak cocok.");
       return;
@@ -23,15 +24,65 @@ export default function Register() {
       setError("Password minimal 6 karakter.");
       return;
     }
+
     setLoading(true);
-    const { error } = await supabase.auth.signUp({ email, password });
+    const { data, error: signUpError } = await supabase.auth.signUp({ email, password });
     setLoading(false);
-    if (error) {
-      setError("Gagal membuat akun. Coba lagi.");
-    } else {
-      navigate("/");
+
+    if (signUpError) {
+      if (signUpError.message.includes("already registered")) {
+        setError("Email sudah terdaftar. Silakan masuk.");
+      } else {
+        setError("Gagal membuat akun. Coba lagi.");
+      }
+      return;
     }
+
+    // If session exists immediately = email confirmation is disabled, auto-logged-in
+    if (data.session) {
+      window.location.href = "/";
+      return;
+    }
+
+    // Email confirmation required
+    setRegistered(true);
   };
+
+  if (registered) {
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center py-12">
+        <div className="w-full max-w-md">
+          <div className="nb-card p-8 text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 border-[3px] border-foreground shadow-[4px_4px_0_#0A0A0A] mb-6" style={{ background: "#00E676" }}>
+              <CheckCircle className="w-8 h-8" />
+            </div>
+            <div className="mb-4">
+              <div className="relative inline-block mb-3">
+                <div className="absolute inset-0 translate-x-1 translate-y-1" style={{ background: "#00E676" }} />
+                <span className="relative font-black text-xl bg-card px-3 py-1 border-[3px] border-foreground block">
+                  CEK EMAIL KAMU!
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center justify-center gap-2 mb-4 p-3 border-[3px] border-foreground" style={{ background: "#f5f5f5" }}>
+              <Mail className="w-5 h-5 shrink-0" />
+              <p className="font-mono text-sm font-bold">{email}</p>
+            </div>
+            <p className="font-mono text-sm opacity-60 mb-6">
+              Kami kirimkan link verifikasi ke email kamu. Klik link tersebut untuk mengaktifkan akun, lalu masuk ke sini.
+            </p>
+            <Link
+              href="/login"
+              className="nb-btn w-full py-3 font-black text-base flex items-center justify-center gap-2"
+              style={{ background: "#FFE034" }}
+            >
+              MASUK SEKARANG
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[70vh] flex items-center justify-center py-12">

@@ -1,6 +1,8 @@
 import type { Request, Response, NextFunction } from "express";
 
-const SUPABASE_URL = process.env["SUPABASE_URL"];
+// VITE_SUPABASE_URL = Supabase REST/Auth API URL (https://xxx.supabase.co)
+// SUPABASE_ANON_KEY = Supabase publishable anon key
+const SUPABASE_REST_URL = process.env["VITE_SUPABASE_URL"];
 const SUPABASE_ANON_KEY = process.env["SUPABASE_ANON_KEY"];
 
 const ROLE_RANK: Record<string, number> = { user: 1, staff: 2, admin: 3 };
@@ -10,10 +12,16 @@ export interface AuthenticatedRequest extends Request {
   authRole?: string;
 }
 
+function extractToken(req: Request): string | null {
+  const header = req.headers.authorization;
+  if (!header?.startsWith("Bearer ")) return null;
+  return header.slice(7);
+}
+
 async function verifyToken(token: string): Promise<{ id: string } | null> {
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
+  if (!SUPABASE_REST_URL || !SUPABASE_ANON_KEY) return null;
   try {
-    const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    const res = await fetch(`${SUPABASE_REST_URL}/auth/v1/user`, {
       headers: {
         Authorization: `Bearer ${token}`,
         apikey: SUPABASE_ANON_KEY,
@@ -27,10 +35,10 @@ async function verifyToken(token: string): Promise<{ id: string } | null> {
 }
 
 async function fetchRole(userId: string, token: string): Promise<string | null> {
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
+  if (!SUPABASE_REST_URL || !SUPABASE_ANON_KEY) return null;
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=role&limit=1`,
+      `${SUPABASE_REST_URL}/rest/v1/profiles?id=eq.${userId}&select=role&limit=1`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -45,12 +53,6 @@ async function fetchRole(userId: string, token: string): Promise<string | null> 
   } catch {
     return null;
   }
-}
-
-function extractToken(req: Request): string | null {
-  const header = req.headers.authorization;
-  if (!header?.startsWith("Bearer ")) return null;
-  return header.slice(7);
 }
 
 export function requireAuth(
