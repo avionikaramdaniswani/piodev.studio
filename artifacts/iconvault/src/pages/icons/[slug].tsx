@@ -53,64 +53,71 @@ export default function IconDetail() {
     if (!icon || downloading) return;
     setDownloading(true);
 
-    // Logged-in users: check quota via Supabase RPC
-    if (user) {
-      const { data: result, error: rpcError } = await supabase.rpc("check_and_record_download", {
-        p_icon_id: icon.id,
+    try {
+      // Get JWT for authenticated request (optional — anon users still can download)
+      const { data: { session: s } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = {};
+      if (s?.access_token) headers["Authorization"] = `Bearer ${s.access_token}`;
+
+      const res = await fetch(`/api/icons/${icon.id}/download`, {
+        method: "POST",
+        headers,
       });
 
-      if (rpcError) {
+      if (res.status === 429) {
+        // Quota exceeded
+        const data = await res.json() as { quota: number; used: number };
+        setDownloading(false);
+        toast({
+          title: "KUOTA HABIS!",
+          description: `Kamu sudah mencapai batas ${data.quota} unduhan hari ini. Reset otomatis tengah malam, atau upgrade ke Plus.`,
+          className: "border-[3px] border-foreground rounded-none font-bold shadow-[4px_4px_0_#0A0A0A]",
+          style: { background: "#FF6B35", color: "white" },
+        });
+        return;
+      }
+
+      if (!res.ok) {
         setDownloading(false);
         toast({
           title: "GAGAL",
-          description: "Terjadi kesalahan saat memeriksa kuota. Coba lagi.",
+          description: "Terjadi kesalahan. Coba lagi.",
           className: "border-[3px] border-foreground rounded-none bg-white font-bold shadow-[4px_4px_0_#0A0A0A]",
         });
         return;
       }
 
-      const res = result as { allowed: boolean; reason?: string; tier: string; quota: number; used: number };
+      // Refresh profile quota display
+      if (user) await refreshProfile();
 
-      if (!res.allowed) {
-        setDownloading(false);
-        toast({
-          title: "KUOTA HABIS!",
-          description: `Kamu sudah mencapai batas ${res.quota} unduhan hari ini. Reset otomatis tengah malam, atau upgrade ke Plus untuk unduhan tak terbatas.`,
-          className: "border-[3px] border-foreground rounded-none font-bold shadow-[4px_4px_0_#0A0A0A]",
-          style: { background: "#FF6B35", color: "white" },
-          action: undefined,
-        });
-        return;
-      }
+      // Trigger the actual file download
+      const blob = new Blob([icon.svgContent], { type: "image/svg+xml" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${icon.slug}.svg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
 
-      // Refresh profile to update quota display
-      await refreshProfile();
+      const isPlus = tier === "plus";
+      const remaining = isPlus ? "∞" : String(quotaLimit - downloadsToday - 1);
+
+      toast({
+        title: "DIUNDUH!",
+        description: isPlus
+          ? `${icon.name} berhasil diunduh.`
+          : `${icon.name} diunduh. Sisa kuota hari ini: ${remaining}`,
+        className: "border-[3px] border-foreground rounded-none bg-primary text-primary-foreground font-bold shadow-[4px_4px_0_#0A0A0A]",
+      });
+    } catch {
+      toast({
+        title: "GAGAL",
+        description: "Tidak bisa terhubung ke server. Coba lagi.",
+        className: "border-[3px] border-foreground rounded-none bg-white font-bold shadow-[4px_4px_0_#0A0A0A]",
+      });
     }
-
-    // Trigger the actual download
-    const blob = new Blob([icon.svgContent], { type: "image/svg+xml" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${icon.slug}.svg`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-    // Increment global download counter on icon
-    downloadMutation.mutate({ id: icon.id });
-
-    const isPlus = tier === "plus";
-    const remaining = isPlus ? "∞" : String(quotaLimit - downloadsToday - 1);
-
-    toast({
-      title: "DIUNDUH!",
-      description: isPlus
-        ? `${icon.name} berhasil diunduh.`
-        : `${icon.name} diunduh. Sisa kuota hari ini: ${remaining}`,
-      className: "border-[3px] border-foreground rounded-none bg-primary text-primary-foreground font-bold shadow-[4px_4px_0_#0A0A0A]",
-    });
 
     setDownloading(false);
   };

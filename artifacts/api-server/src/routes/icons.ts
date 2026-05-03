@@ -1,6 +1,7 @@
 import { Router } from "express";
+import type { Request } from "express";
 import { db } from "@workspace/db";
-import { iconsTable } from "@workspace/db";
+import { iconsTable, profilesTable } from "@workspace/db";
 import { eq, ilike, and, sql, or, ne } from "drizzle-orm";
 import {
   ListIconsQueryParams,
@@ -12,6 +13,7 @@ import {
 } from "@workspace/api-zod";
 import { requireAuth, requireRole } from "../middlewares/requireAuth";
 
+const FREE_QUOTA = 50;
 const router = Router();
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -207,18 +209,93 @@ router.get("/:slug", async (req, res) => {
 });
 
 // POST /icons/:id/download
-router.post("/:id/download", async (req, res) => {
+// Optional auth: if JWT provided, checks and records quota. Anonymous users always allowed.
+router.post("/:id/download", async (req: Request, res) => {
   const parsed = DownloadIconParams.safeParse(req.params);
   if (!parsed.success) return res.status(400).json({ error: "Invalid id" });
 
+  const iconId = parsed.data.id;
+  const token = req.headers.authorization?.startsWith("Bearer ")
+    ? req.headers.authorization.slice(7)
+    : null;
+
+  // If user is logged in, check & update quota
+  if (token) {
+    const SUPABASE_REST_URL = process.env["VITE_SUPABASE_URL"];
+    const SUPABASE_ANON_KEY = process.env["SUPABASE_ANON_KEY"];
+
+    try {
+      const authRes = await fetch(`${SUPABASE_REST_URL}/auth/v1/user`, {
+        headers: { Authorization: `Bearer ${token}`, apikey: SUPABASE_ANON_KEY! },
+      });
+
+      if (authRes.ok) {
+        const authUser = await authRes.json() as { id: string };
+        const userId = authUser.id;
+
+        const [profile] = await db
+          .select()
+          .from(profilesTable)
+          .where(eq(profilesTable.id, userId))
+          .limit(1);
+
+        if (profile) {
+          const today = new Date().toISOString().split("T")[0];
+          const isToday = profile.quotaResetDate === today;
+          const currentDownloads = isToday ? profile.downloadsToday : 0;
+          const isPlus = profile.tier === "plus";
+          const quota = isPlus ? -1 : FREE_QUOTA;
+
+          // Check quota for free users
+          if (!isPlus && currentDownloads >= FREE_QUOTA) {
+            return res.status(429).json({
+              allowed: false,
+              reason: "quota_exceeded",
+              quota: FREE_QUOTA,
+              used: currentDownloads,
+            });
+          }
+
+          // Update profile quota
+          await db
+            .update(profilesTable)
+            .set({
+              downloadsToday: currentDownloads + 1,
+              quotaResetDate: today,
+            })
+            .where(eq(profilesTable.id, userId));
+
+          // Increment icon counter
+          const [icon] = await db
+            .update(iconsTable)
+            .set({ downloads: sql`${iconsTable.downloads} + 1` })
+            .where(eq(iconsTable.id, iconId))
+            .returning({ downloads: iconsTable.downloads });
+
+          if (!icon) return res.status(404).json({ error: "Not found" });
+
+          return res.json({
+            allowed: true,
+            downloads: icon.downloads,
+            quota,
+            used: currentDownloads + 1,
+          });
+        }
+      }
+    } catch {
+      // Fall through to anonymous download if auth fails
+    }
+  }
+
+  // Anonymous or auth failed: just increment counter
   const [icon] = await db
     .update(iconsTable)
     .set({ downloads: sql`${iconsTable.downloads} + 1` })
-    .where(eq(iconsTable.id, parsed.data.id))
+    .where(eq(iconsTable.id, iconId))
     .returning({ downloads: iconsTable.downloads });
 
   if (!icon) return res.status(404).json({ error: "Not found" });
-  return res.json({ downloads: icon.downloads });
+  return res.json({ allowed: true, downloads: icon.downloads });
 });
 
 // POST /icons/:id/like
