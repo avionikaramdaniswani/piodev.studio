@@ -1,84 +1,15 @@
 import { Link, useLocation } from "wouter";
-import { Menu, LogIn, LogOut, User, Shield } from "lucide-react";
+import { Menu, LogIn, User, Shield } from "lucide-react";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
 
 export function Navbar() {
   const [open, setOpen] = useState(false);
-  const { user, role, loading, signOut } = useAuth();
+  const { user, role, loading } = useAuth();
   const [, navigate] = useLocation();
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/");
-    setOpen(false);
-  };
-
-  const AuthButtons = ({ mobile = false }: { mobile?: boolean }) => {
-    if (loading) return null;
-    if (user) {
-      return (
-        <div className={`flex ${mobile ? "flex-col" : "flex-row"} items-start md:items-center gap-3`}>
-          <div className="flex flex-col items-start">
-            <span className="font-mono text-xs opacity-50 truncate max-w-[160px]" title={user.email}>
-              {user.email}
-            </span>
-            {role && role !== "user" && (
-              <span
-                className="font-mono text-[10px] font-black px-1 border-[2px] border-foreground"
-                style={{
-                  background: role === "admin" ? "#FF6B35" : "#4DBBFF",
-                  color: "white",
-                }}
-              >
-                {role.toUpperCase()}
-              </span>
-            )}
-          </div>
-          {(role === "admin" || role === "staff") && (
-            <Link
-              href="/admin"
-              onClick={() => setOpen(false)}
-              className="nb-btn px-3 py-1 text-sm font-black flex items-center gap-1"
-              style={{ background: "#4DBBFF" }}
-            >
-              <Shield className="w-4 h-4" /> ADMIN
-            </Link>
-          )}
-          <button
-            onClick={handleSignOut}
-            className="nb-btn px-3 py-1 text-sm font-black flex items-center gap-1"
-            style={{ background: "#FF6B35", color: "white" }}
-          >
-            <LogOut className="w-4 h-4" /> KELUAR
-          </button>
-        </div>
-      );
-    }
-    return (
-      <div className={`flex ${mobile ? "flex-col" : "flex-row"} items-start md:items-center gap-3`}>
-        <Link
-          href="/login"
-          onClick={() => setOpen(false)}
-          className="nb-btn px-4 py-1 text-sm font-black flex items-center gap-1"
-          style={{ background: "white" }}
-        >
-          <LogIn className="w-4 h-4" /> MASUK
-        </Link>
-        <Link
-          href="/register"
-          onClick={() => setOpen(false)}
-          className="nb-btn px-4 py-1 text-sm font-black flex items-center gap-1"
-          style={{ background: "#FF6B9D", color: "white" }}
-        >
-          <User className="w-4 h-4" /> DAFTAR
-        </Link>
-      </div>
-    );
-  };
-
-  const NavLinks = ({ mobile = false }: { mobile?: boolean }) => (
+  const NavLinks = () => (
     <>
       <Link href="/" onClick={() => setOpen(false)} className="font-bold text-lg hover:underline underline-offset-4 decoration-4">BERANDA</Link>
       <Link href="/icons" onClick={() => setOpen(false)} className="font-bold text-lg hover:underline underline-offset-4 decoration-4">IKON</Link>
@@ -86,26 +17,67 @@ export function Navbar() {
     </>
   );
 
-  const MobileAuthButton = () => {
+  // Single smart auth button — adapts to login state and role
+  const SmartAuthButton = ({ size = "md" }: { size?: "sm" | "md" }) => {
+    const px = size === "sm" ? "px-3 py-1 text-xs" : "px-4 py-1 text-sm";
+    const iconSize = size === "sm" ? "w-3 h-3" : "w-4 h-4";
     if (loading) return null;
-    if (user) {
+
+    if (!user) {
       return (
-        <button
-          onClick={handleSignOut}
-          className="nb-btn px-3 py-1 text-xs font-black flex items-center gap-1"
-          style={{ background: "#FF6B35", color: "white" }}
-        >
-          <LogOut className="w-3 h-3" /> KELUAR
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/login"
+            onClick={() => setOpen(false)}
+            className={`nb-btn ${px} font-black flex items-center gap-1`}
+            style={{ background: "#FFE034" }}
+          >
+            <LogIn className={iconSize} /> MASUK
+          </Link>
+          {size === "md" && (
+            <Link
+              href="/register"
+              onClick={() => setOpen(false)}
+              className={`nb-btn ${px} font-black flex items-center gap-1`}
+              style={{ background: "#FF6B9D", color: "white" }}
+            >
+              <User className={iconSize} /> DAFTAR
+            </Link>
+          )}
+        </div>
       );
     }
+
+    if (role === "admin" || role === "staff") {
+      return (
+        <Link
+          href="/admin"
+          onClick={() => setOpen(false)}
+          className={`nb-btn ${px} font-black flex items-center gap-1`}
+          style={{ background: "#FF6B35", color: "white" }}
+        >
+          <Shield className={iconSize} />
+          {size === "sm" ? "ADMIN" : "PANEL ADMIN"}
+        </Link>
+      );
+    }
+
+    // Regular user → PROFIL button
+    const initials = user.email?.slice(0, 2).toUpperCase() ?? "??";
     return (
       <Link
-        href="/login"
-        className="nb-btn px-3 py-1 text-xs font-black flex items-center gap-1"
-        style={{ background: "#FFE034" }}
+        href="/profil"
+        onClick={() => setOpen(false)}
+        className={`nb-btn ${px} font-black flex items-center gap-2`}
+        style={{ background: "white" }}
       >
-        <LogIn className="w-3 h-3" /> MASUK
+        <span
+          className="w-5 h-5 rounded-none border-[2px] border-foreground flex items-center justify-center font-black text-[9px] shrink-0"
+          style={{ background: "#4DBBFF" }}
+        >
+          {initials}
+        </span>
+        PROFIL
       </Link>
     );
   };
@@ -113,6 +85,7 @@ export function Navbar() {
   return (
     <nav className="sticky top-0 z-50 w-full bg-card border-b-[3px] border-foreground">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-3">
+        {/* Logo */}
         <Link href="/" className="flex flex-col shrink-0">
           <div className="relative">
             <div className="absolute inset-0 bg-primary translate-x-1 translate-y-1"></div>
@@ -121,17 +94,17 @@ export function Navbar() {
           <span className="font-mono text-[10px] font-bold mt-1 tracking-widest text-foreground">piodev.studio</span>
         </Link>
 
-        {/* Desktop nav */}
+        {/* Desktop */}
         <div className="hidden md:flex items-center gap-6">
           <NavLinks />
           <div className="border-l-[3px] border-foreground pl-6">
-            <AuthButtons />
+            <SmartAuthButton size="md" />
           </div>
         </div>
 
-        {/* Mobile: auth button + hamburger */}
+        {/* Mobile */}
         <div className="md:hidden flex items-center gap-2">
-          <MobileAuthButton />
+          <SmartAuthButton size="sm" />
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
               <button className="nb-btn px-3 py-2 bg-primary">

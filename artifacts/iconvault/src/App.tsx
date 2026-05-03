@@ -21,6 +21,7 @@ import UploadIcon from "@/pages/upload";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
 import AdminPage from "@/pages/admin";
+import ProfilPage from "@/pages/profil";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -52,6 +53,7 @@ function Router() {
         <Route path="/login" component={Login} />
         <Route path="/register" component={Register} />
         <Route path="/admin" component={AdminPage} />
+        <Route path="/profil" component={ProfilPage} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
