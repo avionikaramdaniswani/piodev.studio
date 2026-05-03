@@ -35,15 +35,15 @@ export default function Home() {
         <div className="grid grid-cols-2 md:grid-cols-4 border-[4px] border-foreground">
           <div className="bg-primary p-6 border-b-[4px] md:border-b-0 md:border-r-[4px] border-foreground text-center">
             <div className="font-mono text-sm font-bold mb-1">TOTAL IKON</div>
-            <div className="text-4xl font-black">{loadingStats ? "..." : stats?.totalIcons || "500+"}</div>
+            <div className="text-4xl font-black">{loadingStats ? "..." : (stats?.totalIcons ?? 0)}</div>
           </div>
           <div className="bg-accent p-6 border-b-[4px] md:border-b-0 md:border-r-[4px] border-foreground text-center">
             <div className="font-mono text-sm font-bold mb-1">UNDUHAN</div>
-            <div className="text-4xl font-black">{loadingStats ? "..." : stats?.totalDownloads || "10K+"}</div>
+            <div className="text-4xl font-black">{loadingStats ? "..." : (stats?.totalDownloads ?? 0)}</div>
           </div>
           <div className="bg-[#4DBBFF] p-6 border-r-[4px] border-foreground text-center">
             <div className="font-mono text-sm font-bold mb-1">TOOLS GRATIS</div>
-            <div className="text-4xl font-black">8</div>
+            <div className="text-4xl font-black">{loadingStats ? "..." : (stats?.totalTools ?? 0)}</div>
           </div>
           <div className="bg-[#00E676] p-6 text-center flex flex-col justify-center">
             <div className="font-mono text-sm font-bold mb-1">HARGA</div>
