@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
@@ -46,7 +46,7 @@ interface ProfileData {
   quotaLimit: number;
 }
 
-async function fetchProfile(userId: string): Promise<ProfileData | null> {
+async function fetchProfile(userId: string): Promise<ProfileData> {
   try {
     const { data, error } = await supabase
       .from("profiles")
@@ -68,7 +68,7 @@ async function fetchProfile(userId: string): Promise<ProfileData | null> {
       };
     }
 
-    // Try minimal query if full query fails
+    // Try minimal query (new columns may not exist yet)
     const { data: minimal, error: minErr } = await supabase
       .from("profiles")
       .select("role, tier")
@@ -86,31 +86,16 @@ async function fetchProfile(userId: string): Promise<ProfileData | null> {
       };
     }
 
-    // Profile row doesn't exist — create it
-    const { error: upsertErr } = await supabase
+    // Row doesn't exist — create it
+    await supabase
       .from("profiles")
       .upsert({ id: userId, role: "user", tier: "free" }, { onConflict: "id" });
 
-    if (upsertErr) {
-      // If we can't create a profile, the account may have been removed
-      return null;
-    }
-
     return { role: "user", tier: "free", username: null, downloadsToday: 0, quotaLimit: FREE_QUOTA };
   } catch {
-    return null;
+    return { role: "user", tier: "free", username: null, downloadsToday: 0, quotaLimit: FREE_QUOTA };
   }
 }
-
-const clearState = {
-  user: null as User | null,
-  session: null as Session | null,
-  role: null as UserRole | null,
-  tier: null as UserTier | null,
-  username: null as string | null,
-  downloadsToday: 0,
-  quotaLimit: FREE_QUOTA,
-};
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -122,42 +107,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [quotaLimit, setQuotaLimit] = useState(FREE_QUOTA);
   const [loading, setLoading] = useState(true);
 
-  const applyProfile = (p: ProfileData) => {
+  // Track mounted state via ref to avoid stale closure issues
+  const mountedRef = useRef(true);
+
+  const applyProfile = useCallback((p: ProfileData) => {
     setRole(p.role);
     setTier(p.tier);
     setUsername(p.username);
     setDownloadsToday(p.downloadsToday);
     setQuotaLimit(p.quotaLimit);
-  };
+  }, []);
 
-  const clearAuth = useCallback(() => {
-    setUser(clearState.user);
-    setSession(clearState.session);
-    setRole(clearState.role);
-    setTier(clearState.tier);
-    setUsername(clearState.username);
-    setDownloadsToday(clearState.downloadsToday);
-    setQuotaLimit(clearState.quotaLimit);
+  const clearProfile = useCallback(() => {
+    setRole(null);
+    setTier(null);
+    setUsername(null);
+    setDownloadsToday(0);
+    setQuotaLimit(FREE_QUOTA);
     setAuthTokenGetter(null);
   }, []);
 
   const refreshProfile = useCallback(async () => {
-    // Use getUser() (server-validated) instead of cached session
-    const { data: { user: currentUser }, error } = await supabase.auth.getUser();
-    if (error || !currentUser) {
-      await supabase.auth.signOut();
-      clearAuth();
-      return;
-    }
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    if (!currentUser) return;
     const profile = await fetchProfile(currentUser.id);
-    if (!profile) {
-      // Profile couldn't be found or created — account likely deleted
-      await supabase.auth.signOut();
-      clearAuth();
-      return;
-    }
-    applyProfile(profile);
-  }, [clearAuth]);
+    if (mountedRef.current) applyProfile(profile);
+  }, [applyProfile]);
 
   const updateUsername = useCallback(async (newUsername: string): Promise<ProfileUpdateResult> => {
     const cleanUsername = newUsername.trim().toLowerCase().replace(/[^a-z0-9_]/g, "");
@@ -183,91 +158,81 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    let mounted = true;
+    mountedRef.current = true;
 
-    // Register auth token getter so API calls include the Supabase JWT
+    // Set auth token getter so protected API calls include the Supabase JWT
     setAuthTokenGetter(async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      return session?.access_token ?? null;
+      const { data: { session: s } } = await supabase.auth.getSession();
+      return s?.access_token ?? null;
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
-      if (!mounted) return;
-
-      // On sign out or token refresh failure → force clear
-      if (event === "SIGNED_OUT") {
-        clearAuth();
-        setLoading(false);
-        return;
-      }
-
-      // On initial load or sign in, validate server-side with getUser()
-      if (event === "INITIAL_SESSION" || event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
-        if (!newSession?.user) {
-          clearAuth();
-          setLoading(false);
-          return;
-        }
-
-        // Server-side validation — if user was deleted this will fail
-        const { data: { user: serverUser }, error: userErr } = await supabase.auth.getUser();
-
-        if (!mounted) return;
-
-        if (userErr || !serverUser) {
-          // Account no longer exists on Supabase — force sign out
-          await supabase.auth.signOut();
-          clearAuth();
-          setLoading(false);
-          return;
-        }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (_event, newSession) => {
+        if (!mountedRef.current) return;
 
         setSession(newSession);
-        setUser(serverUser);
+        setUser(newSession?.user ?? null);
 
-        // Re-register token getter with fresh session
-        setAuthTokenGetter(async () => {
-          const { data: { session: s } } = await supabase.auth.getSession();
-          return s?.access_token ?? null;
-        });
+        if (newSession?.user) {
+          // Register token getter with the fresh session
+          setAuthTokenGetter(async () => {
+            const { data: { session: s } } = await supabase.auth.getSession();
+            return s?.access_token ?? null;
+          });
 
-        const profile = await fetchProfile(serverUser.id);
-        if (!mounted) return;
-
-        if (!profile) {
-          // Profile missing even after attempted creation — account inconsistent, sign out
-          await supabase.auth.signOut();
-          clearAuth();
-          setLoading(false);
-          return;
+          const profile = await fetchProfile(newSession.user.id);
+          if (mountedRef.current) applyProfile(profile);
+        } else {
+          clearProfile();
         }
 
-        applyProfile(profile);
-        setLoading(false);
-        return;
-      }
+        if (mountedRef.current) setLoading(false);
+      },
+    );
 
-      // USER_UPDATED or other events — update session state only
-      setSession(newSession);
-      setUser(newSession?.user ?? null);
-      if (!newSession?.user) clearAuth();
-      setLoading(false);
-    });
+    // Periodic server-side session validation (every 5 minutes)
+    // Catches deleted accounts between token refreshes
+    const validationInterval = setInterval(async () => {
+      if (!mountedRef.current) return;
+      const currentSession = (await supabase.auth.getSession()).data.session;
+      if (!currentSession) return; // Not logged in, nothing to validate
+
+      const { error } = await supabase.auth.getUser();
+      if (error && mountedRef.current) {
+        // Session is invalid (account deleted etc.) — sign out gracefully
+        await supabase.auth.signOut();
+      }
+    }, 5 * 60 * 1000);
+
+    // Also validate on window focus
+    const onFocus = async () => {
+      if (!mountedRef.current) return;
+      const currentSession = (await supabase.auth.getSession()).data.session;
+      if (!currentSession) return;
+
+      const { error } = await supabase.auth.getUser();
+      if (error && mountedRef.current) {
+        await supabase.auth.signOut();
+      }
+    };
+    window.addEventListener("focus", onFocus);
 
     const timeout = setTimeout(() => {
-      if (mounted) setLoading(false);
-    }, 5000);
+      if (mountedRef.current) setLoading(false);
+    }, 4000);
 
     return () => {
-      mounted = false;
+      mountedRef.current = false;
       subscription.unsubscribe();
+      clearInterval(validationInterval);
+      window.removeEventListener("focus", onFocus);
       clearTimeout(timeout);
     };
-  }, [clearAuth]);
+  }, [applyProfile, clearProfile]);
 
   const signOut = async () => {
     await supabase.auth.signOut();
-    clearAuth();
+    clearProfile();
   };
 
   return (
