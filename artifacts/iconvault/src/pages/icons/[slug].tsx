@@ -90,8 +90,17 @@ export default function IconDetail() {
       // Refresh profile quota display
       if (user) await refreshProfile();
 
+      // Apply selected color: replace currentColor and inject style on root SVG
+      const coloredSvg = icon.svgContent
+        .replace(/currentColor/gi, iconColor)
+        .replace(/<svg([^>]*)>/, (match, attrs) => {
+          // Remove any existing color/stroke/fill style, then inject chosen color
+          const cleaned = attrs.replace(/\s*style="[^"]*"/i, "");
+          return `<svg${cleaned} style="color:${iconColor};stroke:${iconColor}">`;
+        });
+
       // Trigger the actual file download
-      const blob = new Blob([icon.svgContent], { type: "image/svg+xml" });
+      const blob = new Blob([coloredSvg], { type: "image/svg+xml" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
