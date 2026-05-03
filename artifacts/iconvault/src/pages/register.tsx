@@ -17,18 +17,18 @@ export default function Register() {
     e.preventDefault();
     setError("");
     if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+      setError("Password tidak cocok.");
       return;
     }
     if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
+      setError("Password minimal 6 karakter.");
       return;
     }
     setLoading(true);
     const { error } = await supabase.auth.signUp({ email, password });
     setLoading(false);
     if (error) {
-      setError(error.message);
+      setError("Gagal membuat akun. Coba lagi.");
     } else {
       setSuccess(true);
     }
@@ -40,16 +40,16 @@ export default function Register() {
         <div className="w-full max-w-md">
           <div className="nb-card p-8 text-center" style={{ background: "#FFE034" }}>
             <div className="text-5xl mb-4">✓</div>
-            <h2 className="font-black text-2xl mb-2">CHECK YOUR EMAIL!</h2>
+            <h2 className="font-black text-2xl mb-2">CEK EMAIL KAMU!</h2>
             <p className="font-mono text-sm mb-6">
-              We sent a confirmation link to <strong>{email}</strong>. Click it to activate your account.
+              Kami kirim link konfirmasi ke <strong>{email}</strong>. Klik link tersebut untuk mengaktifkan akun kamu.
             </p>
             <button
               onClick={() => navigate("/login")}
               className="nb-btn px-6 py-2"
               style={{ background: "white" }}
             >
-              GO TO LOGIN
+              KE HALAMAN MASUK
             </button>
           </div>
         </div>
@@ -64,13 +64,13 @@ export default function Register() {
           <div className="mb-8">
             <div className="inline-block mb-4">
               <div className="relative">
-                <div className="absolute inset-0 bg-pink-400 translate-x-1 translate-y-1" style={{ background: "#FF6B9D" }} />
+                <div className="absolute inset-0 translate-x-1 translate-y-1" style={{ background: "#FF6B9D" }} />
                 <span className="relative font-black text-3xl bg-card px-3 py-1 border-[3px] border-foreground block">
-                  REGISTER
+                  DAFTAR
                 </span>
               </div>
             </div>
-            <p className="font-mono text-sm opacity-60">Join IconVault — it's free</p>
+            <p className="font-mono text-sm opacity-60">Daftar di PioDev.studio — gratis selamanya</p>
           </div>
 
           {error && (
@@ -87,7 +87,8 @@ export default function Register() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="nb-input w-full px-4 py-3 text-base"
-                placeholder="you@example.com"
+                placeholder="kamu@contoh.com"
+                autoComplete="email"
                 required
               />
             </div>
@@ -100,7 +101,8 @@ export default function Register() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="nb-input w-full px-4 py-3 pr-12 text-base"
-                  placeholder="min. 6 characters"
+                  placeholder="min. 6 karakter"
+                  autoComplete="new-password"
                   required
                 />
                 <button
@@ -114,13 +116,14 @@ export default function Register() {
             </div>
 
             <div>
-              <label className="block font-black text-sm mb-2">CONFIRM PASSWORD</label>
+              <label className="block font-black text-sm mb-2">KONFIRMASI PASSWORD</label>
               <input
                 type={showPassword ? "text" : "password"}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 className="nb-input w-full px-4 py-3 text-base"
-                placeholder="repeat your password"
+                placeholder="ulangi password kamu"
+                autoComplete="new-password"
                 required
               />
             </div>
@@ -132,15 +135,15 @@ export default function Register() {
               style={{ background: "#FF6B9D", color: "white" }}
             >
               <UserPlus className="w-5 h-5" />
-              {loading ? "CREATING ACCOUNT..." : "CREATE ACCOUNT"}
+              {loading ? "MEMBUAT AKUN..." : "BUAT AKUN"}
             </button>
           </form>
 
           <div className="mt-6 pt-6 border-t-[3px] border-foreground text-center">
             <p className="font-mono text-sm">
-              Already have an account?{" "}
+              Sudah punya akun?{" "}
               <Link href="/login" className="font-black underline underline-offset-2 decoration-2">
-                SIGN IN
+                MASUK
               </Link>
             </p>
           </div>

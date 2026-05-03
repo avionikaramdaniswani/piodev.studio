@@ -18,7 +18,7 @@ export default function Login() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) {
-      setError(error.message);
+      setError("Email atau password salah. Coba lagi.");
     } else {
       navigate("/");
     }
@@ -33,11 +33,11 @@ export default function Login() {
               <div className="relative">
                 <div className="absolute inset-0 bg-primary translate-x-1 translate-y-1" />
                 <span className="relative font-black text-3xl bg-card px-3 py-1 border-[3px] border-foreground block">
-                  SIGN IN
+                  MASUK
                 </span>
               </div>
             </div>
-            <p className="font-mono text-sm opacity-60">Welcome back to IconVault</p>
+            <p className="font-mono text-sm opacity-60">Selamat datang kembali di PioDev.studio</p>
           </div>
 
           {error && (
@@ -54,7 +54,8 @@ export default function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="nb-input w-full px-4 py-3 text-base"
-                placeholder="you@example.com"
+                placeholder="kamu@contoh.com"
+                autoComplete="email"
                 required
               />
             </div>
@@ -68,6 +69,7 @@ export default function Login() {
                   onChange={(e) => setPassword(e.target.value)}
                   className="nb-input w-full px-4 py-3 pr-12 text-base"
                   placeholder="••••••••"
+                  autoComplete="current-password"
                   required
                 />
                 <button
@@ -87,15 +89,15 @@ export default function Login() {
               style={{ background: "#FFE034" }}
             >
               <LogIn className="w-5 h-5" />
-              {loading ? "SIGNING IN..." : "SIGN IN"}
+              {loading ? "SEDANG MASUK..." : "MASUK"}
             </button>
           </form>
 
           <div className="mt-6 pt-6 border-t-[3px] border-foreground text-center">
             <p className="font-mono text-sm">
-              Don't have an account?{" "}
+              Belum punya akun?{" "}
               <Link href="/register" className="font-black underline underline-offset-2 decoration-2">
-                REGISTER
+                DAFTAR
               </Link>
             </p>
           </div>

@@ -9,24 +9,24 @@ function AdminDashboard() {
   const tiles = [
     {
       icon: <Upload className="w-8 h-8" />,
-      label: "UPLOAD ICON",
-      desc: "Add new icons to the vault",
+      label: "UPLOAD IKON",
+      desc: "Tambah ikon baru ke PioDev.studio",
       href: "/upload",
       color: "#FFE034",
       roles: ["staff", "admin"],
     },
     {
       icon: <Users className="w-8 h-8" />,
-      label: "MANAGE USERS",
-      desc: "View and assign user roles",
+      label: "KELOLA PENGGUNA",
+      desc: "Lihat dan atur peran pengguna",
       href: "/admin/users",
       color: "#4DBBFF",
       roles: ["admin"],
     },
     {
       icon: <Settings className="w-8 h-8" />,
-      label: "SETTINGS",
-      desc: "Site configuration",
+      label: "PENGATURAN",
+      desc: "Konfigurasi situs",
       href: "/admin/settings",
       color: "#00E676",
       roles: ["admin"],
@@ -39,11 +39,11 @@ function AdminDashboard() {
         <div className="relative inline-block mb-2">
           <div className="absolute inset-0 translate-x-1 translate-y-1" style={{ background: "#FF6B35" }} />
           <h1 className="relative font-black text-4xl bg-card px-3 py-1 border-[3px] border-foreground flex items-center gap-3">
-            <Shield className="w-8 h-8" /> ADMIN PANEL
+            <Shield className="w-8 h-8" /> PANEL ADMIN
           </h1>
         </div>
         <p className="font-mono text-sm opacity-60">
-          Logged in as <strong>{user?.email}</strong> — role:{" "}
+          Masuk sebagai <strong>{user?.email}</strong> — peran:{" "}
           <span className="font-black uppercase">{role}</span>
         </p>
       </div>

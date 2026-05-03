@@ -14,49 +14,49 @@ const tools = [
   {
     id: "svg-optimizer",
     name: "SVG Optimizer",
-    description: "Strip bloat, remove comments, minify code. Make your SVGs tiny.",
+    description: "Hapus kode berlebih, hapus komentar, minify. Bikin SVG kamu sekecil mungkin.",
     icon: Minimize2,
   },
   {
     id: "color-converter",
-    name: "Color Converter",
-    description: "HEX to RGB to HSL. See contrast ratios instantly.",
+    name: "Konverter Warna",
+    description: "HEX ke RGB ke HSL. Lihat rasio kontras seketika.",
     icon: PaintBucket,
   },
   {
     id: "image-converter",
-    name: "Image Converter",
-    description: "PNG to WebP, JPG to PNG. Browser-side, lightning fast.",
+    name: "Konverter Gambar",
+    description: "PNG ke WebP, JPG ke PNG. Di browser, super cepat.",
     icon: ImageIcon,
   },
   {
     id: "json-formatter",
     name: "JSON Formatter",
-    description: "Format, minify, and validate JSON payloads instantly.",
+    description: "Format, minify, dan validasi JSON secara instan.",
     icon: Code2,
   },
   {
     id: "base64",
     name: "Base64 Encoder/Decoder",
-    description: "Encode strings or files to Base64 and back.",
+    description: "Encode string atau file ke Base64 dan sebaliknya.",
     icon: Binary,
   },
   {
     id: "css-shadow-generator",
     name: "CSS Shadow Generator",
-    description: "Build neo-brutalist and standard box-shadows visually.",
+    description: "Buat box-shadow neo-brutalis dan standar secara visual.",
     icon: BoxSelect,
   },
   {
     id: "favicon-generator",
     name: "Favicon Generator",
-    description: "Convert SVGs or PNGs to multi-size favicons.",
+    description: "Konversi SVG atau PNG jadi favicon berbagai ukuran.",
     icon: AppWindow,
   },
   {
     id: "gradient-generator",
     name: "Gradient Generator",
-    description: "Because sometimes you need a gradient even if we hate them.",
+    description: "Kadang kamu butuh gradient. Kami paham, kami bantu.",
     icon: Palette,
   }
 ];
@@ -68,10 +68,10 @@ export default function ToolsHub() {
     <div className="py-8 max-w-6xl mx-auto">
       <div className="mb-12">
         <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tight mb-4 inline-block bg-primary border-[4px] border-foreground px-6 py-2 shadow-[6px_6px_0_#0A0A0A]">
-          FREE TOOLS
+          TOOLS GRATIS
         </h1>
         <p className="text-xl md:text-2xl font-medium max-w-2xl mt-6">
-          No-nonsense browser tools. No server uploads, no waiting. Everything runs locally in your browser.
+          Tools browser langsung pakai. Tanpa upload ke server, tanpa nunggu. Semua jalan di browser kamu.
         </p>
       </div>
 
@@ -94,7 +94,7 @@ export default function ToolsHub() {
                   <h2 className="text-xl font-black mb-2 uppercase">{tool.name}</h2>
                   <p className="font-mono text-sm opacity-80 mb-6 flex-1">{tool.description}</p>
                   <div className="font-bold text-sm flex items-center gap-2 mt-auto">
-                    USE TOOL <span className="text-xl leading-none">→</span>
+                    PAKAI TOOL <span className="text-xl leading-none">→</span>
                   </div>
                 </div>
               </div>

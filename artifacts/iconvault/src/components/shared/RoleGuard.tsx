@@ -21,7 +21,7 @@ export function RoleGuard({ children, requiredRole, fallback }: RoleGuardProps) 
     return (
       <div className="flex items-center justify-center py-24">
         <div className="nb-card p-8 text-center animate-pulse">
-          <p className="font-black text-xl">LOADING...</p>
+          <p className="font-black text-xl">MEMUAT...</p>
         </div>
       </div>
     );
@@ -32,10 +32,10 @@ export function RoleGuard({ children, requiredRole, fallback }: RoleGuardProps) 
       <div className="flex items-center justify-center py-24">
         <div className="nb-card p-10 text-center max-w-sm" style={{ background: "#FFE034" }}>
           <Lock className="w-12 h-12 mx-auto mb-4" />
-          <h2 className="font-black text-2xl mb-2">LOGIN REQUIRED</h2>
-          <p className="font-mono text-sm mb-6">You need to be logged in to access this page.</p>
+          <h2 className="font-black text-2xl mb-2">PERLU LOGIN</h2>
+          <p className="font-mono text-sm mb-6">Kamu harus masuk untuk mengakses halaman ini.</p>
           <Link href="/login" className="nb-btn px-6 py-2 font-black" style={{ background: "white" }}>
-            SIGN IN
+            MASUK
           </Link>
         </div>
       </div>
@@ -50,11 +50,11 @@ export function RoleGuard({ children, requiredRole, fallback }: RoleGuardProps) 
       <div className="flex items-center justify-center py-24">
         <div className="nb-card p-10 text-center max-w-sm" style={{ background: "#FF6B35" }}>
           <Lock className="w-12 h-12 mx-auto mb-4 text-white" />
-          <h2 className="font-black text-2xl mb-2 text-white">ACCESS DENIED</h2>
+          <h2 className="font-black text-2xl mb-2 text-white">AKSES DITOLAK</h2>
           <p className="font-mono text-sm mb-2 text-white opacity-80">
-            This area requires <strong>{requiredRole.toUpperCase()}</strong> access.
+            Area ini membutuhkan akses <strong>{requiredRole.toUpperCase()}</strong>.
           </p>
-          <p className="font-mono text-sm text-white opacity-60">Your role: {(role ?? "user").toUpperCase()}</p>
+          <p className="font-mono text-sm text-white opacity-60">Peran kamu: {(role ?? "user").toUpperCase()}</p>
         </div>
       </div>
     );

@@ -28,8 +28,8 @@ export function Navbar() {
               <span
                 className="font-mono text-[10px] font-black px-1 border-[2px] border-foreground"
                 style={{
-                  background: role === "admin" ? "#FF6B35" : role === "staff" ? "#4DBBFF" : "transparent",
-                  color: role === "admin" || role === "staff" ? "white" : "inherit",
+                  background: role === "admin" ? "#FF6B35" : "#4DBBFF",
+                  color: "white",
                 }}
               >
                 {role.toUpperCase()}
@@ -51,7 +51,7 @@ export function Navbar() {
             className="nb-btn px-3 py-1 text-sm font-black flex items-center gap-1"
             style={{ background: "#FF6B35", color: "white" }}
           >
-            <LogOut className="w-4 h-4" /> SIGN OUT
+            <LogOut className="w-4 h-4" /> KELUAR
           </button>
         </div>
       );
@@ -64,7 +64,7 @@ export function Navbar() {
           className="nb-btn px-4 py-1 text-sm font-black flex items-center gap-1"
           style={{ background: "white" }}
         >
-          <LogIn className="w-4 h-4" /> LOGIN
+          <LogIn className="w-4 h-4" /> MASUK
         </Link>
         <Link
           href="/register"
@@ -72,7 +72,7 @@ export function Navbar() {
           className="nb-btn px-4 py-1 text-sm font-black flex items-center gap-1"
           style={{ background: "#FF6B9D", color: "white" }}
         >
-          <User className="w-4 h-4" /> REGISTER
+          <User className="w-4 h-4" /> DAFTAR
         </Link>
       </div>
     );
@@ -80,8 +80,8 @@ export function Navbar() {
 
   const NavLinks = ({ mobile = false }: { mobile?: boolean }) => (
     <>
-      <Link href="/" onClick={() => setOpen(false)} className="font-bold text-lg hover:underline underline-offset-4 decoration-4">HOME</Link>
-      <Link href="/icons" onClick={() => setOpen(false)} className="font-bold text-lg hover:underline underline-offset-4 decoration-4">ICONS</Link>
+      <Link href="/" onClick={() => setOpen(false)} className="font-bold text-lg hover:underline underline-offset-4 decoration-4">BERANDA</Link>
+      <Link href="/icons" onClick={() => setOpen(false)} className="font-bold text-lg hover:underline underline-offset-4 decoration-4">IKON</Link>
       <Link href="/tools" onClick={() => setOpen(false)} className="font-bold text-lg hover:underline underline-offset-4 decoration-4">TOOLS</Link>
       {mobile && <div className="border-t-[3px] border-foreground pt-4 w-full"><AuthButtons mobile /></div>}
     </>
@@ -93,7 +93,7 @@ export function Navbar() {
         <Link href="/" className="flex flex-col shrink-0">
           <div className="relative">
             <div className="absolute inset-0 bg-primary translate-x-1 translate-y-1"></div>
-            <span className="relative text-2xl font-black bg-card px-2 border-[3px] border-foreground">IconVault</span>
+            <span className="relative text-2xl font-black bg-card px-2 border-[3px] border-foreground">PioDev</span>
           </div>
           <span className="font-mono text-[10px] font-bold mt-1 tracking-widest text-foreground">piodev.studio</span>
         </Link>

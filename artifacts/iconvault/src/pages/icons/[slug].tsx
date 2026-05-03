@@ -19,7 +19,6 @@ export default function IconDetail() {
   const [likes, setLikes] = useState(0);
   const [bgColor, setBgColor] = useState<"white" | "#FFE034" | "#0A0A0A">("white");
 
-  // Sync likes when icon loads
   if (icon && likes === 0 && icon.likes > 0) {
     setLikes(icon.likes);
   }
@@ -35,12 +34,10 @@ export default function IconDetail() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    
     downloadMutation.mutate({ id: icon.id });
-    
     toast({
-      title: "DOWNLOADED",
-      description: `${icon.name} grabbed successfully.`,
+      title: "DIUNDUH!",
+      description: `${icon.name} berhasil diunduh.`,
       className: "border-[3px] border-foreground rounded-none bg-primary text-primary-foreground font-bold shadow-[4px_4px_0_#0A0A0A]",
     });
   };
@@ -49,8 +46,8 @@ export default function IconDetail() {
     if (!icon) return;
     navigator.clipboard.writeText(icon.svgContent);
     toast({
-      title: "COPIED",
-      description: "SVG code copied to clipboard.",
+      title: "DISALIN!",
+      description: "Kode SVG berhasil disalin ke clipboard.",
       className: "border-[3px] border-foreground rounded-none bg-[#4DBBFF] text-primary-foreground font-bold shadow-[4px_4px_0_#0A0A0A]",
     });
   };
@@ -58,16 +55,14 @@ export default function IconDetail() {
   const handleLike = () => {
     if (!icon) return;
     likeMutation.mutate({ id: icon.id }, {
-      onSuccess: (data) => {
-        setLikes(data.likes);
-      }
+      onSuccess: (data) => setLikes(data.likes),
     });
   };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="text-2xl font-black animate-pulse">LOADING ICON...</div>
+        <div className="text-2xl font-black animate-pulse">MEMUAT IKON...</div>
       </div>
     );
   }
@@ -75,9 +70,9 @@ export default function IconDetail() {
   if (error || !icon) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
-        <h1 className="text-6xl font-black mb-4">ICON NOT FOUND</h1>
-        <p className="font-mono mb-8">This icon doesn't exist or was removed.</p>
-        <Link href="/icons" className="nb-btn bg-primary">BROWSE ALL ICONS</Link>
+        <h1 className="text-6xl font-black mb-4">IKON TIDAK DITEMUKAN</h1>
+        <p className="font-mono mb-8">Ikon ini tidak ada atau sudah dihapus.</p>
+        <Link href="/icons" className="nb-btn bg-primary">LIHAT SEMUA IKON</Link>
       </div>
     );
   }
@@ -85,7 +80,7 @@ export default function IconDetail() {
   return (
     <div className="py-8 max-w-6xl mx-auto">
       <Link href="/icons" className="inline-flex items-center gap-2 font-bold mb-8 hover:underline decoration-4">
-        ← BACK TO ICONS
+        ← KEMBALI KE IKON
       </Link>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-24">
@@ -93,10 +88,7 @@ export default function IconDetail() {
         <div className="flex flex-col gap-4">
           <div 
             className="aspect-square nb-card flex items-center justify-center p-12 transition-colors duration-300"
-            style={{ 
-              backgroundColor: bgColor,
-              color: bgColor === "#0A0A0A" ? "white" : "#0A0A0A" 
-            }}
+            style={{ backgroundColor: bgColor, color: bgColor === "#0A0A0A" ? "white" : "#0A0A0A" }}
           >
             <div 
               className="w-full h-full max-w-[240px] max-h-[240px] [&>svg]:w-full [&>svg]:h-full"
@@ -108,17 +100,17 @@ export default function IconDetail() {
             <button 
               onClick={() => setBgColor("white")}
               className={`w-12 h-12 border-[3px] border-foreground shadow-[2px_2px_0_#0A0A0A] bg-white ${bgColor === "white" ? "outline outline-4 outline-offset-2 outline-primary" : ""}`}
-              title="White Background"
+              title="Latar Putih"
             />
             <button 
               onClick={() => setBgColor("#FFE034")}
               className={`w-12 h-12 border-[3px] border-foreground shadow-[2px_2px_0_#0A0A0A] bg-[#FFE034] ${bgColor === "#FFE034" ? "outline outline-4 outline-offset-2 outline-foreground" : ""}`}
-              title="Yellow Background"
+              title="Latar Kuning"
             />
             <button 
               onClick={() => setBgColor("#0A0A0A")}
               className={`w-12 h-12 border-[3px] border-foreground shadow-[2px_2px_0_#0A0A0A] bg-[#0A0A0A] ${bgColor === "#0A0A0A" ? "outline outline-4 outline-offset-2 outline-primary" : ""}`}
-              title="Black Background"
+              title="Latar Hitam"
             />
           </div>
         </div>
@@ -130,7 +122,7 @@ export default function IconDetail() {
             <button 
               onClick={handleLike}
               className="nb-btn bg-accent py-3 px-4 flex items-center gap-2 group ml-4 shrink-0"
-              title="Like this icon"
+              title="Suka ikon ini"
             >
               <Heart className={`w-6 h-6 ${likes > icon.likes ? 'fill-foreground' : 'group-hover:fill-foreground/20'}`} />
               <span className="text-xl">{likes || icon.likes}</span>
@@ -151,19 +143,19 @@ export default function IconDetail() {
 
           <div className="grid grid-cols-2 gap-4 mb-8 font-mono text-sm border-[3px] border-foreground p-6 bg-card shadow-[4px_4px_0_#0A0A0A]">
             <div className="flex flex-col gap-1">
-              <span className="opacity-50 font-bold flex items-center gap-1"><Layers className="w-4 h-4" /> CATEGORY</span>
+              <span className="opacity-50 font-bold flex items-center gap-1"><Layers className="w-4 h-4" /> KATEGORI</span>
               <span className="font-bold text-lg">{icon.category}</span>
             </div>
             <div className="flex flex-col gap-1">
-              <span className="opacity-50 font-bold flex items-center gap-1"><Tag className="w-4 h-4" /> STYLE</span>
+              <span className="opacity-50 font-bold flex items-center gap-1"><Tag className="w-4 h-4" /> GAYA</span>
               <span className="font-bold text-lg uppercase">{icon.style}</span>
             </div>
             <div className="flex flex-col gap-1 mt-4">
-              <span className="opacity-50 font-bold flex items-center gap-1"><Download className="w-4 h-4" /> DOWNLOADS</span>
+              <span className="opacity-50 font-bold flex items-center gap-1"><Download className="w-4 h-4" /> UNDUHAN</span>
               <span className="font-bold text-lg">{icon.downloads}</span>
             </div>
             <div className="flex flex-col gap-1 mt-4">
-              <span className="opacity-50 font-bold flex items-center gap-1"><ExternalLink className="w-4 h-4" /> LICENSE</span>
+              <span className="opacity-50 font-bold flex items-center gap-1"><ExternalLink className="w-4 h-4" /> LISENSI</span>
               <span className="font-bold text-lg uppercase">{icon.license}</span>
             </div>
           </div>
@@ -173,13 +165,13 @@ export default function IconDetail() {
               onClick={handleDownload}
               className="nb-btn bg-primary text-xl py-4 flex-1 flex justify-center items-center gap-3"
             >
-              <Download className="w-6 h-6" /> DOWNLOAD SVG
+              <Download className="w-6 h-6" /> UNDUH SVG
             </button>
             <button 
               onClick={handleCopy}
               className="nb-btn bg-card text-xl py-4 flex-1 flex justify-center items-center gap-3"
             >
-              <Code2 className="w-6 h-6" /> COPY CODE
+              <Code2 className="w-6 h-6" /> SALIN KODE
             </button>
           </div>
         </div>
@@ -189,7 +181,7 @@ export default function IconDetail() {
       {Array.isArray(similarIcons) && similarIcons.length > 0 && (
         <section>
           <div className="border-t-[4px] border-foreground pt-12 mb-8">
-            <h2 className="text-4xl font-black">SIMILAR ICONS</h2>
+            <h2 className="text-4xl font-black">IKON SERUPA</h2>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
             {similarIcons.map((similar, i) => (
