@@ -75,16 +75,25 @@ export function Navbar() {
       );
     }
 
+    const initials = user.email?.slice(0, 2).toUpperCase() ?? "??";
+
     if (role === "admin" || role === "staff") {
       return (
-        <Link href="/admin" className={`nb-btn ${px} font-black flex items-center gap-1`} style={{ background: "#FF6B35", color: "white" }}>
-          <Shield className={iconSz} />
-          {size === "sm" ? "ADMIN" : "PANEL ADMIN"}
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/admin" className={`nb-btn ${px} font-black flex items-center gap-1`} style={{ background: "#FF6B35", color: "white" }}>
+            <Shield className={iconSz} />
+            {size === "sm" ? "ADMIN" : "PANEL ADMIN"}
+          </Link>
+          <Link href="/profil" className={`nb-btn ${px} font-black flex items-center gap-2`} style={{ background: "#4DBBFF" }}>
+            <span className="w-5 h-5 border-[2px] border-foreground flex items-center justify-center font-black text-[9px] shrink-0" style={{ background: "white" }}>
+              {initials}
+            </span>
+            {size !== "sm" && "PROFIL"}
+          </Link>
+        </div>
       );
     }
 
-    const initials = user.email?.slice(0, 2).toUpperCase() ?? "??";
     return (
       <Link href="/profil" className={`nb-btn ${px} font-black flex items-center gap-2`} style={{ background: "#4DBBFF" }}>
         <span className="w-5 h-5 border-[2px] border-foreground flex items-center justify-center font-black text-[9px] shrink-0" style={{ background: "white" }}>
@@ -191,7 +200,7 @@ export function Navbar() {
             </Link>
           )}
 
-          {user && role === "user" && (
+          {user && (
             <Link
               href="/profil"
               onClick={close}
