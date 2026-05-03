@@ -1,17 +1,18 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { Link, useLocation } from "wouter";
 import {
   LogOut, Mail, Shield, Calendar, Key,
-  Sparkles, Check, User, Lock,
+  Sparkles, Check, User, Lock, Download,
+  Pencil, X, CheckCheck,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { RoleGuard } from "@/components/shared/RoleGuard";
 import { TierBadge } from "@/components/shared/TierBadge";
 
 const ROLE_META: Record<string, { label: string; bg: string; color: string }> = {
-  admin: { label: "Admin", bg: "#FF6B35", color: "white" },
-  staff: { label: "Staff", bg: "#4DBBFF", color: "white" },
-  user:  { label: "Pengguna", bg: "#FFE034", color: "#0A0A0A" },
+  admin: { label: "Admin",     bg: "#FF6B35", color: "white"   },
+  staff: { label: "Staff",     bg: "#4DBBFF", color: "white"   },
+  user:  { label: "Pengguna",  bg: "#FFE034", color: "#0A0A0A" },
 };
 
 const PLUS_PERKS = [
@@ -22,46 +23,231 @@ const PLUS_PERKS = [
   "Dukungan langsung via email",
 ];
 
-const FREE_PERKS = [
-  "Akses 10.000+ ikon gratis",
-  "Unduh SVG & PNG standar",
-  "Semua developer tools",
-];
-
 type TabId = "akun" | "langganan" | "keamanan";
 
 const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
-  { id: "akun",       label: "AKUN",        icon: <User className="w-4 h-4" /> },
-  { id: "langganan",  label: "LANGGANAN",   icon: <Sparkles className="w-4 h-4" /> },
-  { id: "keamanan",   label: "KEAMANAN",    icon: <Lock className="w-4 h-4" /> },
+  { id: "akun",       label: "AKUN",      icon: <User className="w-4 h-4" /> },
+  { id: "langganan",  label: "LANGGANAN", icon: <Sparkles className="w-4 h-4" /> },
+  { id: "keamanan",   label: "KEAMANAN",  icon: <Lock className="w-4 h-4" /> },
 ];
+
+/* ── Username Editor ───────────────────────────────────── */
+function UsernameEditor() {
+  const { username, updateUsername, refreshProfile } = useAuth();
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(username ?? "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleEdit = () => {
+    setValue(username ?? "");
+    setError(null);
+    setEditing(true);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    const { error: err } = await updateUsername(value);
+    setSaving(false);
+    if (err) {
+      setError(err);
+    } else {
+      await refreshProfile();
+      setEditing(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setEditing(false);
+    setError(null);
+  };
+
+  if (editing) {
+    return (
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <input
+            autoFocus
+            className="nb-input flex-1 px-3 py-2 text-sm font-bold"
+            value={value}
+            onChange={e => setValue(e.target.value)}
+            placeholder="nama_pengguna_kamu"
+            maxLength={32}
+            disabled={saving}
+            onKeyDown={e => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") handleCancel(); }}
+          />
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="nb-btn px-3 py-2 text-xs font-black flex items-center gap-1 disabled:opacity-50"
+            style={{ background: "#00E676" }}
+          >
+            <CheckCheck className="w-3 h-3" /> {saving ? "..." : "SIMPAN"}
+          </button>
+          <button onClick={handleCancel} className="opacity-50 hover:opacity-100">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        {error && <p className="font-mono text-xs" style={{ color: "#FF6B35" }}>{error}</p>}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <p className="font-bold">
+        {username ? (
+          <span className="font-mono">@{username}</span>
+        ) : (
+          <span className="opacity-40 italic text-sm">Belum diatur</span>
+        )}
+      </p>
+      <button
+        onClick={handleEdit}
+        className="opacity-40 hover:opacity-100 transition-opacity"
+        title="Edit nama pengguna"
+      >
+        <Pencil className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+}
+
+/* ── Quota Bar ─────────────────────────────────────────── */
+function QuotaBar() {
+  const { tier, downloadsToday, quotaLimit } = useAuth();
+  const isPlus = tier === "plus";
+
+  if (isPlus) {
+    return (
+      <div className="flex items-center gap-3 py-4 border-b-[2px] border-foreground/10">
+        <div className="opacity-40 mt-0.5 shrink-0"><Download className="w-4 h-4" /></div>
+        <div className="flex-1">
+          <p className="font-mono text-[10px] opacity-40 mb-0.5">KUOTA UNDUHAN</p>
+          <div className="flex items-center gap-2">
+            <p className="font-bold">Tidak terbatas</p>
+            <TierBadge tier="plus" size="sm" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const pct = Math.min((downloadsToday / quotaLimit) * 100, 100);
+  const remaining = quotaLimit - downloadsToday;
+  const isLow = remaining <= 10;
+  const barColor = isLow ? "#FF6B35" : "#00E676";
+
+  return (
+    <div className="flex flex-col gap-2 py-4 border-b-[2px] border-foreground/10">
+      <div className="flex items-start gap-4">
+        <div className="opacity-40 mt-0.5 shrink-0"><Download className="w-4 h-4" /></div>
+        <div className="flex-1 min-w-0">
+          <p className="font-mono text-[10px] opacity-40 mb-0.5">KUOTA UNDUHAN HARI INI</p>
+          <div className="flex items-center justify-between mb-2">
+            <p className="font-bold">
+              {downloadsToday} / {quotaLimit}
+              <span className="font-mono text-xs opacity-50 ml-2">({remaining} tersisa)</span>
+            </p>
+          </div>
+          {/* Progress bar */}
+          <div className="h-2.5 w-full border-[2px] border-foreground bg-background">
+            <div
+              className="h-full transition-all duration-500"
+              style={{ width: `${pct}%`, background: barColor }}
+            />
+          </div>
+          {isLow && remaining > 0 && (
+            <p className="font-mono text-[10px] mt-1.5" style={{ color: "#FF6B35" }}>
+              Kuota hampir habis! Upgrade ke Plus untuk unduhan tak terbatas.
+            </p>
+          )}
+          {remaining === 0 && (
+            <p className="font-mono text-[10px] mt-1.5" style={{ color: "#FF6B35" }}>
+              Kuota hari ini habis. Reset otomatis tengah malam.
+            </p>
+          )}
+        </div>
+      </div>
+      {remaining === 0 && (
+        <Link
+          href="/plus"
+          className="nb-btn py-2 text-xs font-black flex items-center justify-center gap-1.5 ml-8"
+          style={{ background: "#FFE034" }}
+        >
+          <Sparkles className="w-3 h-3" /> UPGRADE KE PLUS
+        </Link>
+      )}
+    </div>
+  );
+}
 
 /* ── Tab: Akun ─────────────────────────────────────────── */
 function TabAkun() {
-  const { user, role } = useAuth();
+  const { user, role, tier } = useAuth();
   const roleMeta = ROLE_META[role ?? "user"];
   const joinedAt = user?.created_at
     ? new Date(user.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
     : "–";
 
-  const rows = [
-    { icon: <Mail className="w-4 h-4" />,     label: "EMAIL",           value: user?.email },
-    { icon: <Shield className="w-4 h-4" />,   label: "PERAN",           value: roleMeta.label.toUpperCase() },
-    { icon: <Calendar className="w-4 h-4" />, label: "BERGABUNG SEJAK", value: joinedAt },
-    { icon: <Key className="w-4 h-4" />,      label: "USER ID",         value: user?.id, mono: true },
-  ];
-
   return (
     <div className="flex flex-col gap-1">
-      {rows.map(r => (
-        <div key={r.label} className="flex items-start gap-4 py-4 border-b-[2px] border-foreground/10 last:border-0">
-          <div className="opacity-40 mt-0.5 shrink-0">{r.icon}</div>
-          <div className="min-w-0 flex-1">
-            <p className="font-mono text-[10px] opacity-40 mb-0.5">{r.label}</p>
-            <p className={`font-bold break-all ${r.mono ? "font-mono text-xs opacity-60" : ""}`}>{r.value}</p>
+      {/* Username */}
+      <div className="flex items-start gap-4 py-4 border-b-[2px] border-foreground/10">
+        <div className="opacity-40 mt-0.5 shrink-0"><User className="w-4 h-4" /></div>
+        <div className="min-w-0 flex-1">
+          <p className="font-mono text-[10px] opacity-40 mb-0.5">NAMA PENGGUNA</p>
+          <UsernameEditor />
+        </div>
+      </div>
+
+      {/* Email */}
+      <div className="flex items-start gap-4 py-4 border-b-[2px] border-foreground/10">
+        <div className="opacity-40 mt-0.5 shrink-0"><Mail className="w-4 h-4" /></div>
+        <div className="min-w-0 flex-1">
+          <p className="font-mono text-[10px] opacity-40 mb-0.5">EMAIL</p>
+          <p className="font-bold break-all">{user?.email}</p>
+        </div>
+      </div>
+
+      {/* Tier + role */}
+      <div className="flex items-start gap-4 py-4 border-b-[2px] border-foreground/10">
+        <div className="opacity-40 mt-0.5 shrink-0"><Shield className="w-4 h-4" /></div>
+        <div className="min-w-0 flex-1">
+          <p className="font-mono text-[10px] opacity-40 mb-1">PERAN & PAKET</p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span
+              className="font-black text-xs px-2 py-1 border-[2px] border-foreground shadow-[2px_2px_0_#0A0A0A]"
+              style={{ background: roleMeta.bg, color: roleMeta.color }}
+            >
+              {roleMeta.label.toUpperCase()}
+            </span>
+            <TierBadge tier={tier} size="sm" />
           </div>
         </div>
-      ))}
+      </div>
+
+      {/* Quota bar */}
+      <QuotaBar />
+
+      {/* Join date */}
+      <div className="flex items-start gap-4 py-4 border-b-[2px] border-foreground/10">
+        <div className="opacity-40 mt-0.5 shrink-0"><Calendar className="w-4 h-4" /></div>
+        <div className="min-w-0 flex-1">
+          <p className="font-mono text-[10px] opacity-40 mb-0.5">BERGABUNG SEJAK</p>
+          <p className="font-bold">{joinedAt}</p>
+        </div>
+      </div>
+
+      {/* User ID */}
+      <div className="flex items-start gap-4 py-4">
+        <div className="opacity-40 mt-0.5 shrink-0"><Key className="w-4 h-4" /></div>
+        <div className="min-w-0 flex-1">
+          <p className="font-mono text-[10px] opacity-40 mb-0.5">USER ID</p>
+          <p className="font-mono text-xs opacity-60 break-all">{user?.id}</p>
+        </div>
+      </div>
     </div>
   );
 }
@@ -141,7 +327,6 @@ function TabKeamanan() {
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Password section — placeholder for future */}
       <div className="border-[3px] border-foreground p-5 flex flex-col gap-3">
         <div className="flex items-center gap-2 border-b-[2px] border-foreground/10 pb-3">
           <Lock className="w-4 h-4 opacity-40" />
@@ -159,7 +344,6 @@ function TabKeamanan() {
         </button>
       </div>
 
-      {/* Danger zone */}
       <div className="border-[3px] border-foreground p-5 flex flex-col gap-3" style={{ borderColor: "#FF6B35" }}>
         <div className="flex items-center gap-2 border-b-[2px] border-foreground/10 pb-3">
           <LogOut className="w-4 h-4 opacity-40" />
@@ -182,10 +366,13 @@ function TabKeamanan() {
 
 /* ── Main page ─────────────────────────────────────────── */
 function ProfilContent() {
-  const { user, role, tier } = useAuth();
+  const { user, role, tier, username } = useAuth();
   const [activeTab, setActiveTab] = useState<TabId>("akun");
 
-  const initials = user?.email?.slice(0, 2).toUpperCase() ?? "??";
+  const initials = username
+    ? username.slice(0, 2).toUpperCase()
+    : (user?.email?.slice(0, 2).toUpperCase() ?? "??");
+
   const roleMeta = ROLE_META[role ?? "user"];
   const isPlus = tier === "plus";
 
@@ -202,7 +389,10 @@ function ProfilContent() {
             {initials}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="font-mono text-sm opacity-50 truncate mb-2">{user?.email}</p>
+            <p className="font-black text-lg leading-tight">
+              {username ? `@${username}` : <span className="opacity-40 font-mono text-sm italic">Belum ada nama pengguna</span>}
+            </p>
+            <p className="font-mono text-xs opacity-50 truncate mt-0.5 mb-2">{user?.email}</p>
             <div className="flex items-center gap-2 flex-wrap">
               <span
                 className="font-black text-xs px-2 py-1 border-[2px] border-foreground shadow-[2px_2px_0_#0A0A0A]"
@@ -218,7 +408,6 @@ function ProfilContent() {
 
       {/* Tabs */}
       <div className="flex flex-col gap-0">
-        {/* Tab bar */}
         <div className="flex border-[3px] border-foreground overflow-hidden shadow-[4px_4px_0_#0A0A0A]">
           {TABS.map((tab, i) => {
             const active = activeTab === tab.id;
@@ -237,8 +426,6 @@ function ProfilContent() {
             );
           })}
         </div>
-
-        {/* Tab content */}
         <div className="border-[3px] border-t-0 border-foreground p-6" style={{ background: "var(--card)" }}>
           {activeTab === "akun"      && <TabAkun />}
           {activeTab === "langganan" && <TabLangganan />}

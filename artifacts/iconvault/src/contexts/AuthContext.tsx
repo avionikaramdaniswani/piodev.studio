@@ -1,17 +1,24 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 
 export type UserRole = "user" | "staff" | "admin";
 export type UserTier = "free" | "plus";
 
+const FREE_QUOTA = 50;
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   role: UserRole | null;
   tier: UserTier | null;
+  username: string | null;
+  downloadsToday: number;
+  quotaLimit: number;
   loading: boolean;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
+  updateUsername: (username: string) => Promise<{ error: string | null }>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -19,23 +26,45 @@ const AuthContext = createContext<AuthContextType>({
   session: null,
   role: null,
   tier: null,
+  username: null,
+  downloadsToday: 0,
+  quotaLimit: FREE_QUOTA,
   loading: true,
   signOut: async () => {},
+  refreshProfile: async () => {},
+  updateUsername: async () => ({ error: null }),
 });
 
-async function fetchProfile(userId: string): Promise<{ role: UserRole; tier: UserTier }> {
+interface ProfileData {
+  role: UserRole;
+  tier: UserTier;
+  username: string | null;
+  downloadsToday: number;
+  quotaLimit: number;
+}
+
+async function fetchProfile(userId: string): Promise<ProfileData> {
   try {
     const { data } = await supabase
       .from("profiles")
-      .select("role, tier")
+      .select("role, tier, username, downloads_today, quota_reset_date")
       .eq("id", userId)
       .single();
+
+    const tier: UserTier = (data?.tier as UserTier) ?? "free";
+    const today = new Date().toISOString().split("T")[0];
+    const isToday = data?.quota_reset_date === today;
+    const downloadsToday = isToday ? (data?.downloads_today ?? 0) : 0;
+
     return {
       role: (data?.role as UserRole) ?? "user",
-      tier: (data?.tier as UserTier) ?? "free",
+      tier,
+      username: data?.username ?? null,
+      downloadsToday,
+      quotaLimit: tier === "plus" ? -1 : FREE_QUOTA,
     };
   } catch {
-    return { role: "user", tier: "free" };
+    return { role: "user", tier: "free", username: null, downloadsToday: 0, quotaLimit: FREE_QUOTA };
   }
 }
 
@@ -44,28 +73,63 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<UserRole | null>(null);
   const [tier, setTier] = useState<UserTier | null>(null);
+  const [username, setUsername] = useState<string | null>(null);
+  const [downloadsToday, setDownloadsToday] = useState(0);
+  const [quotaLimit, setQuotaLimit] = useState(FREE_QUOTA);
   const [loading, setLoading] = useState(true);
 
+  const applyProfile = (p: ProfileData) => {
+    setRole(p.role);
+    setTier(p.tier);
+    setUsername(p.username);
+    setDownloadsToday(p.downloadsToday);
+    setQuotaLimit(p.quotaLimit);
+  };
+
+  const refreshProfile = useCallback(async () => {
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    if (!currentUser) return;
+    const profile = await fetchProfile(currentUser.id);
+    applyProfile(profile);
+  }, []);
+
+  const updateUsername = useCallback(async (newUsername: string): Promise<{ error: string | null }> => {
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    if (!currentUser) return { error: "Tidak login" };
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ username: newUsername.trim() || null })
+      .eq("id", currentUser.id);
+
+    if (error) {
+      if (error.code === "23505") return { error: "Nama pengguna sudah dipakai, coba yang lain." };
+      return { error: "Gagal menyimpan nama pengguna." };
+    }
+
+    setUsername(newUsername.trim() || null);
+    return { error: null };
+  }, []);
+
   useEffect(() => {
-    // onAuthStateChange fires INITIAL_SESSION immediately on mount in Supabase v2
-    // so we don't need a separate getSession() call
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
 
       if (session?.user) {
-        const { role: r, tier: t } = await fetchProfile(session.user.id);
-        setRole(r);
-        setTier(t);
+        const profile = await fetchProfile(session.user.id);
+        applyProfile(profile);
       } else {
         setRole(null);
         setTier(null);
+        setUsername(null);
+        setDownloadsToday(0);
+        setQuotaLimit(FREE_QUOTA);
       }
 
       setLoading(false);
     });
 
-    // Safety net: if Supabase never responds, stop showing loading after 4s
     const timeout = setTimeout(() => setLoading(false), 4000);
 
     return () => {
@@ -78,10 +142,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut();
     setRole(null);
     setTier(null);
+    setUsername(null);
+    setDownloadsToday(0);
+    setQuotaLimit(FREE_QUOTA);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, role, tier, loading, signOut }}>
+    <AuthContext.Provider value={{
+      user, session, role, tier, username,
+      downloadsToday, quotaLimit, loading,
+      signOut, refreshProfile, updateUsername,
+    }}>
       {children}
     </AuthContext.Provider>
   );
