@@ -20,8 +20,12 @@ function applyColorToSvg(svgContent: string, color: string): string {
     .replace(/\bfill:\s*(?!none\b)[^;"}]*/gi, `fill:${color}`)
     .replace(/\bstroke:\s*(?!none\b)[^;"}]*/gi, `stroke:${color}`)
     .replace(/<svg([^>]*)>/, (_match, attrs) => {
-      const cleaned = attrs.replace(/\s*style="[^"]*"/i, "");
-      return `<svg${cleaned} style="color:${color}">`;
+      // Strip any existing style and fill on root SVG, then re-inject chosen color.
+      // Setting fill here means paths with NO explicit fill attribute will inherit it.
+      const cleaned = attrs
+        .replace(/\s*style="[^"]*"/i, "")
+        .replace(/\s*\bfill="[^"]*"/i, "");
+      return `<svg${cleaned} fill="${color}" style="color:${color}">`;
     });
 }
 
