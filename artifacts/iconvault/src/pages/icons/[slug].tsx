@@ -25,10 +25,25 @@ export default function IconDetail() {
   const { user, tier, downloadsToday, quotaLimit, refreshProfile } = useAuth();
 
   const [likes, setLikes] = useState(0);
-  const [iconColor, setIconColor] = useState<"dark" | "accent" | "white">("dark");
+  const [iconColor, setIconColor] = useState("#0A0A0A");
   const [downloading, setDownloading] = useState(false);
 
   const accentColor = icon ? ACCENT_COLORS[icon.id % ACCENT_COLORS.length] : ACCENT_COLORS[0];
+
+  // Use dark bg when icon color is too light to see on white
+  function isLight(hex: string) {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return (r * 299 + g * 587 + b * 114) / 1000 > 180;
+  }
+  const previewBg = isLight(iconColor) ? "#0A0A0A" : "#FFFFFF";
+
+  const PRESET_COLORS = [
+    "#0A0A0A", "#FFFFFF", "#FF0000", "#FF6B35",
+    "#FFE034", "#00E676", "#4DBBFF", "#7C3AED",
+    "#FF6B9D", "#FF6B6B", "#06B6D4", "#F59E0B",
+  ];
 
   if (icon && likes === 0 && icon.likes > 0) {
     setLikes(icon.likes);
@@ -154,10 +169,7 @@ export default function IconDetail() {
             <div className="h-4 w-full border-b-[3px] border-foreground" style={{ backgroundColor: accentColor }} />
             <div
               className="flex items-center justify-center p-12 h-64 transition-colors duration-300"
-              style={{
-                backgroundColor: iconColor === "white" ? "#0A0A0A" : "white",
-                color: iconColor === "accent" ? accentColor : iconColor === "dark" ? "#0A0A0A" : "white",
-              }}
+              style={{ backgroundColor: previewBg, color: iconColor }}
             >
               <div
                 className="w-full h-full max-w-[160px] max-h-[160px] [&>svg]:w-full [&>svg]:h-full [&>svg]:stroke-current [&>svg_*]:stroke-current"
@@ -166,24 +178,51 @@ export default function IconDetail() {
             </div>
           </div>
 
-          <div className="flex justify-center gap-3 items-center">
-            <span className="font-mono text-xs font-bold mr-1 opacity-50">WARNA IKON:</span>
-            <button
-              onClick={() => setIconColor("dark")}
-              className={`w-10 h-10 border-[3px] border-foreground shadow-[2px_2px_0_#0A0A0A] bg-[#0A0A0A] ${iconColor === "dark" ? "outline outline-4 outline-offset-2 outline-primary" : ""}`}
-              title="Ikon Hitam"
-            />
-            <button
-              onClick={() => setIconColor("accent")}
-              className={`w-10 h-10 border-[3px] border-foreground shadow-[2px_2px_0_#0A0A0A] ${iconColor === "accent" ? "outline outline-4 outline-offset-2 outline-foreground" : ""}`}
-              style={{ backgroundColor: accentColor }}
-              title="Ikon Warna Aksen"
-            />
-            <button
-              onClick={() => setIconColor("white")}
-              className={`w-10 h-10 border-[3px] border-foreground shadow-[2px_2px_0_#0A0A0A] bg-white ${iconColor === "white" ? "outline outline-4 outline-offset-2 outline-primary" : ""}`}
-              title="Ikon Putih (latar gelap)"
-            />
+          {/* Color picker */}
+          <div className="nb-card p-3">
+            <p className="font-mono text-[10px] font-bold opacity-50 mb-2">WARNA IKON</p>
+            <div className="flex flex-wrap gap-2 items-center">
+              {PRESET_COLORS.map(c => (
+                <button
+                  key={c}
+                  onClick={() => setIconColor(c)}
+                  title={c}
+                  className="w-8 h-8 border-[2px] border-foreground shadow-[2px_2px_0_#0A0A0A] transition-transform hover:scale-110 shrink-0"
+                  style={{
+                    backgroundColor: c,
+                    outline: iconColor === c ? "3px solid #0A0A0A" : "none",
+                    outlineOffset: "2px",
+                  }}
+                />
+              ))}
+              {/* Accent color shortcut */}
+              <button
+                onClick={() => setIconColor(accentColor)}
+                title="Warna aksen ikon ini"
+                className="w-8 h-8 border-[2px] border-foreground shadow-[2px_2px_0_#0A0A0A] transition-transform hover:scale-110 shrink-0 font-black text-[9px] flex items-center justify-center"
+                style={{
+                  backgroundColor: accentColor,
+                  outline: iconColor === accentColor ? "3px solid #0A0A0A" : "none",
+                  outlineOffset: "2px",
+                }}
+              >
+                ★
+              </button>
+              {/* Custom color picker */}
+              <label
+                className="w-8 h-8 border-[2px] border-foreground shadow-[2px_2px_0_#0A0A0A] cursor-pointer flex items-center justify-center text-lg hover:scale-110 transition-transform shrink-0"
+                title="Pilih warna custom"
+                style={{ background: "linear-gradient(135deg,#f00,#ff0,#0f0,#0ff,#00f,#f0f)" }}
+              >
+                <input
+                  type="color"
+                  className="opacity-0 absolute w-0 h-0"
+                  value={iconColor}
+                  onChange={e => setIconColor(e.target.value)}
+                />
+              </label>
+              <span className="font-mono text-xs font-bold ml-1 opacity-60 uppercase">{iconColor}</span>
+            </div>
           </div>
         </div>
 
