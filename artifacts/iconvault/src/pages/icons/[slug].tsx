@@ -477,7 +477,8 @@ export default function IconDetail() {
           onClick={() => setShowDownloadModal(false)}
         >
           <div
-            className="border-t-[4px] sm:border-[4px] border-foreground bg-background w-full sm:max-w-sm shadow-[0_-4px_0_#0A0A0A] sm:shadow-[6px_6px_0_#0A0A0A] max-h-[82vh] overflow-y-auto"
+            className="border-t-[4px] sm:border-[4px] border-foreground bg-background w-full sm:max-w-sm shadow-[0_-4px_0_#0A0A0A] sm:shadow-[6px_6px_0_#0A0A0A] max-h-[82vh] overflow-y-auto [&::-webkit-scrollbar]:hidden"
+            style={{ scrollbarWidth: "none" }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
