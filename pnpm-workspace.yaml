@@ -65,6 +65,8 @@ catalog:
   vite: ^7.3.2
   wouter: ^3.3.5
   zod: ^3.25.76
+  orval: ^8.5.3
+  '@supabase/supabase-js': ^2.49.4
 
 autoInstallPeers: false
 
