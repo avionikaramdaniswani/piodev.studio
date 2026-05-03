@@ -83,13 +83,36 @@ export function Navbar() {
       <Link href="/" onClick={() => setOpen(false)} className="font-bold text-lg hover:underline underline-offset-4 decoration-4">BERANDA</Link>
       <Link href="/icons" onClick={() => setOpen(false)} className="font-bold text-lg hover:underline underline-offset-4 decoration-4">IKON</Link>
       <Link href="/tools" onClick={() => setOpen(false)} className="font-bold text-lg hover:underline underline-offset-4 decoration-4">TOOLS</Link>
-      {mobile && <div className="border-t-[3px] border-foreground pt-4 w-full"><AuthButtons mobile /></div>}
     </>
   );
 
+  const MobileAuthButton = () => {
+    if (loading) return null;
+    if (user) {
+      return (
+        <button
+          onClick={handleSignOut}
+          className="nb-btn px-3 py-1 text-xs font-black flex items-center gap-1"
+          style={{ background: "#FF6B35", color: "white" }}
+        >
+          <LogOut className="w-3 h-3" /> KELUAR
+        </button>
+      );
+    }
+    return (
+      <Link
+        href="/login"
+        className="nb-btn px-3 py-1 text-xs font-black flex items-center gap-1"
+        style={{ background: "#FFE034" }}
+      >
+        <LogIn className="w-3 h-3" /> MASUK
+      </Link>
+    );
+  };
+
   return (
     <nav className="sticky top-0 z-50 w-full bg-card border-b-[3px] border-foreground">
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
+      <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-3">
         <Link href="/" className="flex flex-col shrink-0">
           <div className="relative">
             <div className="absolute inset-0 bg-primary translate-x-1 translate-y-1"></div>
@@ -98,6 +121,7 @@ export function Navbar() {
           <span className="font-mono text-[10px] font-bold mt-1 tracking-widest text-foreground">piodev.studio</span>
         </Link>
 
+        {/* Desktop nav */}
         <div className="hidden md:flex items-center gap-6">
           <NavLinks />
           <div className="border-l-[3px] border-foreground pl-6">
@@ -105,15 +129,17 @@ export function Navbar() {
           </div>
         </div>
 
-        <div className="md:hidden">
+        {/* Mobile: auth button + hamburger */}
+        <div className="md:hidden flex items-center gap-2">
+          <MobileAuthButton />
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
               <button className="nb-btn px-3 py-2 bg-primary">
-                <Menu className="h-6 w-6" />
+                <Menu className="h-5 w-5" />
               </button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[300px] border-l-[3px] border-foreground sm:w-[400px] bg-secondary p-8 flex flex-col gap-6">
-              <NavLinks mobile />
+            <SheetContent side="right" className="w-[280px] border-l-[3px] border-foreground bg-secondary p-8 flex flex-col gap-6">
+              <NavLinks />
             </SheetContent>
           </Sheet>
         </div>
