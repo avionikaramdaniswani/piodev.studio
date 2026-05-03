@@ -25,15 +25,24 @@ export default function IconsList() {
     <div className="flex flex-col gap-8 py-4">
       {/* Sticky Search Bar */}
       <div className="sticky top-20 z-40 bg-background/95 backdrop-blur py-4 border-b-[4px] border-foreground">
-        <div className="relative max-w-4xl mx-auto">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-foreground" />
-          <input 
-            type="text" 
-            placeholder="SEARCH ICONS..." 
-            className="nb-input w-full text-2xl font-black pl-14 py-4"
+        <div className="nb-input max-w-4xl mx-auto flex items-center gap-3 px-4 py-3">
+          <Search className="w-6 h-6 text-foreground shrink-0" />
+          <input
+            type="text"
+            placeholder="SEARCH ICONS..."
+            className="flex-1 bg-transparent outline-none text-2xl font-black"
+            style={{ fontFamily: "'Space Grotesk', sans-serif" }}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
+          {search && (
+            <button
+              onClick={() => { setSearch(""); setPage(1); }}
+              className="shrink-0 text-foreground opacity-50 hover:opacity-100 text-xl font-black leading-none"
+            >
+              ✕
+            </button>
+          )}
         </div>
       </div>
 
