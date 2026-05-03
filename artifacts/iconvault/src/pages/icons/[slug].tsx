@@ -219,14 +219,79 @@ export default function IconDetail() {
     setDownloading(false);
   };
 
-  const handleCopy = () => {
-    if (!icon) return;
-    navigator.clipboard.writeText(icon.svgContent);
-    toast({
-      title: "DISALIN!",
-      description: "Kode SVG berhasil disalin ke clipboard.",
-      className: "border-[3px] border-foreground rounded-none bg-[#4DBBFF] text-primary-foreground font-bold shadow-[4px_4px_0_#0A0A0A]",
-    });
+  const [copying, setCopying] = useState(false);
+
+  const handleCopy = async () => {
+    if (!icon || copying) return;
+    setCopying(true);
+
+    try {
+      const { data: { session: s } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = {};
+      if (s?.access_token) headers["Authorization"] = `Bearer ${s.access_token}`;
+
+      const res = await fetch(`/api/icons/${icon.id}/download`, { method: "POST", headers });
+
+      if (res.status === 429) {
+        const data = await res.json() as { quota: number; used: number; reason?: string };
+        setCopying(false);
+        if (data.reason === "anon_quota_exceeded") {
+          setShowAnonLimitModal(true);
+        } else {
+          toast({
+            title: "KUOTA HABIS!",
+            description: `Kamu sudah mencapai batas ${data.quota} akses hari ini. Reset tengah malam atau upgrade ke Plus.`,
+            className: "border-[3px] border-foreground rounded-none font-bold shadow-[4px_4px_0_#0A0A0A]",
+            style: { background: "#FF6B35", color: "white" },
+          });
+        }
+        return;
+      }
+
+      if (!res.ok) {
+        setCopying(false);
+        toast({
+          title: "GAGAL",
+          description: "Terjadi kesalahan. Coba lagi.",
+          className: "border-[3px] border-foreground rounded-none bg-white font-bold shadow-[4px_4px_0_#0A0A0A]",
+        });
+        return;
+      }
+
+      if (user) await refreshProfile();
+
+      await navigator.clipboard.writeText(icon.svgContent);
+
+      const isPlus = tier === "plus";
+      if (!user) {
+        const dlData = await res.json().catch(() => null) as { used?: number } | null;
+        const anonRemaining = 5 - (dlData?.used ?? 1);
+        toast({
+          title: "DISALIN!",
+          description: anonRemaining > 0
+            ? `Kode SVG disalin. Sisa ${anonRemaining} akses gratis hari ini.`
+            : `Kode SVG disalin. Kuota tamu habis, daftar gratis untuk lanjut!`,
+          className: "border-[3px] border-foreground rounded-none bg-[#4DBBFF] text-primary-foreground font-bold shadow-[4px_4px_0_#0A0A0A]",
+        });
+      } else {
+        const remaining = isPlus ? "∞" : String(quotaLimit - downloadsToday - 1);
+        toast({
+          title: "DISALIN!",
+          description: isPlus
+            ? "Kode SVG berhasil disalin ke clipboard."
+            : `Kode SVG disalin. Sisa kuota hari ini: ${remaining}`,
+          className: "border-[3px] border-foreground rounded-none bg-[#4DBBFF] text-primary-foreground font-bold shadow-[4px_4px_0_#0A0A0A]",
+        });
+      }
+    } catch {
+      toast({
+        title: "GAGAL",
+        description: "Tidak bisa terhubung ke server. Coba lagi.",
+        className: "border-[3px] border-foreground rounded-none bg-white font-bold shadow-[4px_4px_0_#0A0A0A]",
+      });
+    }
+
+    setCopying(false);
   };
 
   const handleLike = () => {
@@ -460,9 +525,10 @@ export default function IconDetail() {
             </button>
             <button
               onClick={handleCopy}
-              className="nb-btn bg-card text-xl py-4 flex-1 flex justify-center items-center gap-3"
+              disabled={copying}
+              className="nb-btn bg-card text-xl py-4 flex-1 flex justify-center items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Code2 className="w-6 h-6" /> SALIN KODE
+              <Code2 className="w-6 h-6" /> {copying ? "MENYALIN..." : "SALIN KODE"}
             </button>
           </div>
         </div>
