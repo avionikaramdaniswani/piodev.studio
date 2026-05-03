@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { Search, Filter } from "lucide-react";
+import { Link } from "wouter";
+import { Search, Filter, Sparkles, X } from "lucide-react";
 import { useListIcons, useListCategories, ListIconsStyle } from "@workspace/api-client-react";
 import { IconCard } from "@/components/shared/IconCard";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useAuth } from "@/contexts/AuthContext";
 
 const STYLES = ["outline", "filled", "duotone"] as const;
 const STYLE_COLORS: Record<string, string> = {
@@ -17,6 +19,9 @@ export default function IconsList() {
   const [category, setCategory] = useState<string>("");
   const [style, setStyle] = useState<ListIconsStyle | "">("");
   const [page, setPage] = useState(1);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+  const { user, tier } = useAuth();
+  const showBanner = !bannerDismissed && user && tier !== "plus";
 
   const { data: iconData, isLoading: loadingIcons } = useListIcons({
     search: debouncedSearch,
@@ -31,6 +36,31 @@ export default function IconsList() {
 
   return (
     <div className="flex flex-col gap-6 py-4">
+
+      {/* Plus banner — only for logged-in Free users */}
+      {showBanner && (
+        <div className="flex items-center justify-between gap-4 border-[3px] border-foreground px-5 py-3 shadow-[3px_3px_0_#0A0A0A]" style={{ background: "#FFE034" }}>
+          <div className="flex items-center gap-3 min-w-0">
+            <Sparkles className="w-4 h-4 shrink-0" />
+            <p className="font-black text-sm truncate">
+              Kamu pakai paket Free — <span className="font-mono font-normal">upgrade ke Plus untuk unduhan tak terbatas &amp; koleksi eksklusif.</span>
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Link
+              href="/plus"
+              className="nb-btn px-3 py-1.5 text-xs font-black whitespace-nowrap"
+              style={{ background: "#0A0A0A", color: "white" }}
+            >
+              LIHAT PLUS →
+            </Link>
+            <button onClick={() => setBannerDismissed(true)} className="opacity-50 hover:opacity-100">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Search */}
       <div className="py-2 border-b-[4px] border-foreground">
         <div className="nb-input flex items-center gap-3 px-4 py-3">

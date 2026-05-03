@@ -80,65 +80,51 @@ function TabLangganan() {
           </p>
           <p className="font-mono text-xs opacity-70">Nikmati semua fitur premium PioDev.studio</p>
         </div>
-        <div className="border-[3px] border-foreground p-5">
-          <p className="font-black text-sm mb-3 opacity-60">FITUR AKTIF</p>
-          <ul className="flex flex-col gap-2.5">
-            {PLUS_PERKS.map(p => (
-              <li key={p} className="flex items-center gap-3 font-mono text-sm">
-                <span className="w-5 h-5 border-[2px] border-foreground flex items-center justify-center shrink-0" style={{ background: "#00E676" }}>
-                  <Check className="w-3 h-3" />
-                </span>
-                {p}
-              </li>
-            ))}
-          </ul>
-        </div>
+        <ul className="flex flex-col gap-2">
+          {PLUS_PERKS.map(p => (
+            <li key={p} className="flex items-center gap-3 font-mono text-sm py-2 border-b-[2px] border-foreground/10 last:border-0">
+              <span className="w-5 h-5 border-[2px] border-foreground flex items-center justify-center shrink-0" style={{ background: "#00E676" }}>
+                <Check className="w-3 h-3" />
+              </span>
+              {p}
+            </li>
+          ))}
+        </ul>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Free */}
-        <div className="border-[3px] border-foreground p-5">
-          <div className="flex items-center justify-between mb-4">
-            <p className="font-black text-lg">FREE</p>
-            <TierBadge tier="free" size="sm" />
-          </div>
-          <ul className="flex flex-col gap-2 mb-4">
-            {FREE_PERKS.map(p => (
-              <li key={p} className="flex items-start gap-2 font-mono text-xs opacity-60">
-                <Check className="w-3 h-3 mt-0.5 shrink-0" /> {p}
-              </li>
-            ))}
-          </ul>
-          <p className="font-black text-2xl">Gratis</p>
-        </div>
-        {/* Plus */}
-        <div className="border-[3px] border-foreground p-5 shadow-[4px_4px_0_#0A0A0A]" style={{ background: "#FFE034" }}>
-          <div className="flex items-center justify-between mb-4">
-            <p className="font-black text-lg">PLUS</p>
-            <TierBadge tier="plus" size="sm" />
-          </div>
-          <ul className="flex flex-col gap-2 mb-4">
-            {PLUS_PERKS.map(p => (
-              <li key={p} className="flex items-start gap-2 font-mono text-xs">
-                <Sparkles className="w-3 h-3 mt-0.5 shrink-0" /> {p}
-              </li>
-            ))}
-          </ul>
-          <p className="font-black text-2xl">
-            Rp 49.000<span className="font-mono text-sm font-normal">/bln</span>
-          </p>
+    <div className="flex flex-col gap-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="font-black text-lg">Paket aktif: <TierBadge tier="free" size="sm" /></p>
+          <p className="font-mono text-xs opacity-50 mt-1">Upgrade untuk akses penuh ke semua fitur</p>
         </div>
       </div>
-      <button
-        className="nb-btn py-3 font-black flex items-center justify-center gap-2 w-full"
-        style={{ background: "#FFE034" }}
-      >
-        <Sparkles className="w-5 h-5" /> UPGRADE KE PLUS
-      </button>
+      <div className="border-[3px] border-foreground p-5 flex flex-col gap-4" style={{ background: "#FFE034" }}>
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="font-black text-2xl">Plus — Rp 49.000<span className="font-mono text-sm font-normal">/bln</span></p>
+            <p className="font-mono text-xs opacity-70 mt-0.5">Atau Rp 470.000/tahun · hemat 20%</p>
+          </div>
+          <TierBadge tier="plus" size="sm" />
+        </div>
+        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+          {PLUS_PERKS.map(p => (
+            <li key={p} className="flex items-center gap-2 font-mono text-xs">
+              <Sparkles className="w-3 h-3 shrink-0" /> {p}
+            </li>
+          ))}
+        </ul>
+        <Link
+          href="/plus"
+          className="nb-btn py-3 font-black flex items-center justify-center gap-2"
+          style={{ background: "#0A0A0A", color: "white" }}
+        >
+          <Sparkles className="w-4 h-4" /> LIHAT DETAIL & UPGRADE →
+        </Link>
+      </div>
     </div>
   );
 }

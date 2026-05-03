@@ -22,6 +22,7 @@ import Login from "@/pages/login";
 import Register from "@/pages/register";
 import AdminPage from "@/pages/admin";
 import ProfilPage from "@/pages/profil";
+import PlusPage from "@/pages/plus";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -54,6 +55,7 @@ function Router() {
         <Route path="/register" component={Register} />
         <Route path="/admin" component={AdminPage} />
         <Route path="/profil" component={ProfilPage} />
+        <Route path="/plus" component={PlusPage} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
