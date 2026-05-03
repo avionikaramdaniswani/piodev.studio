@@ -24,7 +24,7 @@ export default function IconsList() {
   return (
     <div className="flex flex-col gap-8 py-4">
       {/* Sticky Search Bar */}
-      <div className="sticky top-20 z-40 bg-background/95 backdrop-blur py-4 border-b-[4px] border-foreground">
+      <div className="py-4 border-b-[4px] border-foreground">
         <div className="nb-input max-w-4xl mx-auto flex items-center gap-3 px-4 py-3">
           <Search className="w-6 h-6 text-foreground shrink-0" />
           <input
