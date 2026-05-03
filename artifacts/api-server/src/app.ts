@@ -19,17 +19,22 @@ app.use(
 
 const devDomain = process.env["REPLIT_DEV_DOMAIN"];
 const replitDomains = process.env["REPLIT_DOMAINS"];
-const allowedOrigins = new Set<string>();
-if (devDomain) allowedOrigins.add(`https://${devDomain}`);
+const allowedHostnames = new Set<string>();
+if (devDomain) allowedHostnames.add(devDomain);
 if (replitDomains) {
-  replitDomains.split(",").forEach((d) => allowedOrigins.add(`https://${d.trim()}`));
+  replitDomains.split(",").forEach((d) => allowedHostnames.add(d.trim()));
 }
 
 app.use(
   cors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
-      if (allowedOrigins.has(origin)) return callback(null, true);
+      try {
+        const hostname = new URL(origin).hostname;
+        if (allowedHostnames.has(hostname)) return callback(null, true);
+      } catch {
+        // invalid origin
+      }
       callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
