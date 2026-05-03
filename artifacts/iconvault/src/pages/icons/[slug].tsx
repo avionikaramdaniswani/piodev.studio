@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useRoute, Link, useLocation } from "wouter";
-import { Download, Copy, Heart, Hash, Layers, Tag, ExternalLink, Code2, Sparkles, UserPlus, X } from "lucide-react";
+import { Download, Heart, Hash, Layers, Tag, ExternalLink, Code2, Sparkles, UserPlus, X, FileImage, FileText, FileCode2 } from "lucide-react";
+import { jsPDF } from "jspdf";
 
 import { useGetIconBySlug, useDownloadIcon, useToggleLike, useGetSimilarIcons } from "@workspace/api-client-react";
 
@@ -29,6 +30,44 @@ function applyColorToSvg(svgContent: string, color: string): string {
     });
 }
 
+const PNG_SIZES = [16, 24, 32, 48, 64, 128, 256, 512];
+
+/** Render a colored SVG string to a PNG blob at the given pixel size. */
+function svgToPngBlob(svgString: string, size: number): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const blob = new Blob([svgString], { type: "image/svg+xml" });
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, size, size);
+      URL.revokeObjectURL(url);
+      canvas.toBlob((b) => {
+        if (b) resolve(b);
+        else reject(new Error("Canvas toBlob failed"));
+      }, "image/png");
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("SVG load failed")); };
+    img.src = url;
+  });
+}
+
+/** Download an SVG as a PDF page sized to fit the icon. */
+async function downloadAsPdf(svgString: string, filename: string) {
+  const pngBlob = await svgToPngBlob(svgString, 512);
+  const dataUrl = await new Promise<string>((res) => {
+    const reader = new FileReader();
+    reader.onload = () => res(reader.result as string);
+    reader.readAsDataURL(pngBlob);
+  });
+  const pdf = new jsPDF({ unit: "px", format: [512, 512] });
+  pdf.addImage(dataUrl, "PNG", 0, 0, 512, 512);
+  pdf.save(`${filename}.pdf`);
+}
+
 export default function IconDetail() {
   const [, params] = useRoute("/icons/:slug");
   const slug = params?.slug || "";
@@ -47,6 +86,8 @@ export default function IconDetail() {
   const [iconColor, setIconColor] = useState("#0A0A0A");
   const [downloading, setDownloading] = useState(false);
   const [showAnonLimitModal, setShowAnonLimitModal] = useState(false);
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [selectedPngSize, setSelectedPngSize] = useState(64);
 
   const accentColor = icon ? ACCENT_COLORS[icon.id % ACCENT_COLORS.length] : ACCENT_COLORS[0];
 
@@ -69,29 +110,25 @@ export default function IconDetail() {
     setLikes(icon.likes);
   }
 
-  const handleDownload = async () => {
+  const handleDownload = async (format: "svg" | "png" | "pdf", pngSize?: number) => {
     if (!icon || downloading) return;
     setDownloading(true);
+    setShowDownloadModal(false);
 
     try {
-      // Get JWT for authenticated request (optional — anon users still can download)
+      // Check quota via API (applies for all formats — 1 download = 1 quota unit)
       const { data: { session: s } } = await supabase.auth.getSession();
       const headers: Record<string, string> = {};
       if (s?.access_token) headers["Authorization"] = `Bearer ${s.access_token}`;
 
-      const res = await fetch(`/api/icons/${icon.id}/download`, {
-        method: "POST",
-        headers,
-      });
+      const res = await fetch(`/api/icons/${icon.id}/download`, { method: "POST", headers });
 
       if (res.status === 429) {
         const data = await res.json() as { quota: number; used: number; reason?: string };
         setDownloading(false);
         if (data.reason === "anon_quota_exceeded") {
-          // Anonymous user hit their daily limit — show sign-up CTA modal
           setShowAnonLimitModal(true);
         } else {
-          // Logged-in free user hit their daily limit
           toast({
             title: "KUOTA HABIS!",
             description: `Kamu sudah mencapai batas ${data.quota} unduhan hari ini. Reset otomatis tengah malam, atau upgrade ke Plus.`,
@@ -112,43 +149,49 @@ export default function IconDetail() {
         return;
       }
 
-      // Refresh profile quota display
       if (user) await refreshProfile();
 
       const coloredSvg = applyColorToSvg(icon.svgContent, iconColor);
+      const slug = icon.slug;
 
-      // Trigger the actual file download
-      const blob = new Blob([coloredSvg], { type: "image/svg+xml" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${icon.slug}.svg`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      if (format === "svg") {
+        const blob = new Blob([coloredSvg], { type: "image/svg+xml" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url; a.download = `${slug}.svg`;
+        document.body.appendChild(a); a.click();
+        document.body.removeChild(a); URL.revokeObjectURL(url);
+      } else if (format === "png") {
+        const size = pngSize ?? selectedPngSize;
+        const pngBlob = await svgToPngBlob(coloredSvg, size);
+        const url = URL.createObjectURL(pngBlob);
+        const a = document.createElement("a");
+        a.href = url; a.download = `${slug}-${size}.png`;
+        document.body.appendChild(a); a.click();
+        document.body.removeChild(a); URL.revokeObjectURL(url);
+      } else if (format === "pdf") {
+        await downloadAsPdf(coloredSvg, slug);
+      }
 
+      // Show success toast with quota info
       const isPlus = tier === "plus";
-      const remaining = isPlus ? "∞" : String(quotaLimit - downloadsToday - 1);
-
+      const formatLabel = format.toUpperCase();
       if (!user) {
-        // Anonymous download — read remaining from response
         const downloadData = await res.json().catch(() => null) as { used?: number } | null;
         const used = downloadData?.used ?? 1;
         const anonRemaining = 5 - used;
         toast({
-          title: "DIUNDUH!",
+          title: `DIUNDUH ${formatLabel}!`,
           description: anonRemaining > 0
-            ? `${icon.name} diunduh. Sisa ${anonRemaining} unduhan gratis hari ini — daftar untuk dapat 50/hari!`
-            : `${icon.name} diunduh. Kuota tamu habis, daftar gratis untuk lanjut!`,
+            ? `Sisa ${anonRemaining} unduhan gratis hari ini — daftar untuk dapat 50/hari!`
+            : `Kuota tamu habis. Daftar gratis untuk lanjut!`,
           className: "border-[3px] border-foreground rounded-none bg-primary text-primary-foreground font-bold shadow-[4px_4px_0_#0A0A0A]",
         });
       } else {
+        const remaining = isPlus ? "∞" : String(quotaLimit - downloadsToday - 1);
         toast({
-          title: "DIUNDUH!",
-          description: isPlus
-            ? `${icon.name} berhasil diunduh.`
-            : `${icon.name} diunduh. Sisa kuota hari ini: ${remaining}`,
+          title: `DIUNDUH ${formatLabel}!`,
+          description: isPlus ? `${icon.name} berhasil diunduh.` : `Sisa kuota hari ini: ${remaining}`,
           className: "border-[3px] border-foreground rounded-none bg-primary text-primary-foreground font-bold shadow-[4px_4px_0_#0A0A0A]",
         });
       }
@@ -395,12 +438,12 @@ export default function IconDetail() {
 
           <div className="flex flex-col sm:flex-row gap-4">
             <button
-              onClick={handleDownload}
+              onClick={() => setShowDownloadModal(true)}
               disabled={downloading || !!quotaExhausted}
               className="nb-btn bg-primary text-xl py-4 flex-1 flex justify-center items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Download className="w-6 h-6" />
-              {downloading ? "MENGUNDUH..." : quotaExhausted ? "KUOTA HABIS" : "UNDUH SVG"}
+              {downloading ? "MENGUNDUH..." : quotaExhausted ? "KUOTA HABIS" : "UNDUH"}
             </button>
             <button
               onClick={handleCopy}
@@ -424,6 +467,93 @@ export default function IconDetail() {
             ))}
           </div>
         </section>
+      )}
+
+      {/* Download Format Modal */}
+      {showDownloadModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(10,10,10,0.7)" }}
+          onClick={() => setShowDownloadModal(false)}
+        >
+          <div
+            className="border-[4px] border-foreground bg-background w-full max-w-md shadow-[8px_8px_0_#0A0A0A]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between border-b-[4px] border-foreground px-6 py-4" style={{ background: accentColor }}>
+              <h2 className="text-2xl font-black tracking-tight">PILIH FORMAT</h2>
+              <button onClick={() => setShowDownloadModal(false)} className="border-[3px] border-foreground bg-white p-1 hover:bg-gray-100">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 flex flex-col gap-4">
+              {/* SVG Option */}
+              <button
+                onClick={() => handleDownload("svg")}
+                className="nb-btn bg-card flex items-center gap-4 text-left py-4 px-5"
+              >
+                <div className="border-[3px] border-foreground p-2" style={{ background: "#FFE034" }}>
+                  <FileCode2 className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-lg font-black">SVG</p>
+                  <p className="font-mono text-xs text-muted-foreground">Scalable Vector — infinitely sharp, semua ukuran</p>
+                </div>
+              </button>
+
+              {/* PNG Option */}
+              <div className="border-[3px] border-foreground p-5" style={{ background: "#F8F8F8" }}>
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="border-[3px] border-foreground p-2" style={{ background: "#4DBBFF" }}>
+                    <FileImage className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-black">PNG</p>
+                    <p className="font-mono text-xs text-muted-foreground">Raster transparan — pilih ukuran di bawah</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 gap-2 mb-4">
+                  {PNG_SIZES.map((size) => (
+                    <button
+                      key={size}
+                      onClick={() => setSelectedPngSize(size)}
+                      className={`border-[3px] border-foreground py-2 font-black font-mono text-sm transition-colors ${
+                        selectedPngSize === size
+                          ? "bg-foreground text-background"
+                          : "bg-white hover:bg-gray-100"
+                      }`}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => handleDownload("png", selectedPngSize)}
+                  className="nb-btn bg-primary w-full flex justify-center items-center gap-2 py-3"
+                >
+                  <Download className="w-4 h-4" />
+                  UNDUH PNG {selectedPngSize}×{selectedPngSize}
+                </button>
+              </div>
+
+              {/* PDF Option */}
+              <button
+                onClick={() => handleDownload("pdf")}
+                className="nb-btn bg-card flex items-center gap-4 text-left py-4 px-5"
+              >
+                <div className="border-[3px] border-foreground p-2" style={{ background: "#FF6B9D" }}>
+                  <FileText className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-lg font-black">PDF</p>
+                  <p className="font-mono text-xs text-muted-foreground">512×512px — siap print, siap presentasi</p>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
