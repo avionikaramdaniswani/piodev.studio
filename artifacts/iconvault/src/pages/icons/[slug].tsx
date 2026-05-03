@@ -97,13 +97,23 @@ export default function IconDetail() {
       // Refresh profile quota display
       if (user) await refreshProfile();
 
-      // Apply selected color: replace currentColor and inject style on root SVG
+      // Apply selected color to the SVG being downloaded.
+      // Strategy: replace all fill/stroke attribute values (except "none") with the chosen color,
+      // then also replace currentColor references and inject a root style.
       const coloredSvg = icon.svgContent
+        // Replace currentColor keyword
         .replace(/currentColor/gi, iconColor)
-        .replace(/<svg([^>]*)>/, (match, attrs) => {
-          // Remove any existing color/stroke/fill style, then inject chosen color
+        // Replace hardcoded fill colors (e.g. fill="#000", fill="black") but keep fill="none"
+        .replace(/\bfill="(?!none\b)([^"]*)"/gi, `fill="${iconColor}"`)
+        // Replace hardcoded stroke colors (e.g. stroke="#000") but keep stroke="none"
+        .replace(/\bstroke="(?!none\b)([^"]*)"/gi, `stroke="${iconColor}"`)
+        // Replace inline style fill/stroke declarations
+        .replace(/\bfill:\s*(?!none\b)[^;"}]*/gi, `fill:${iconColor}`)
+        .replace(/\bstroke:\s*(?!none\b)[^;"}]*/gi, `stroke:${iconColor}`)
+        // Update the root <svg> element style
+        .replace(/<svg([^>]*)>/, (_match, attrs) => {
           const cleaned = attrs.replace(/\s*style="[^"]*"/i, "");
-          return `<svg${cleaned} style="color:${iconColor};stroke:${iconColor}">`;
+          return `<svg${cleaned} style="color:${iconColor}">`;
         });
 
       // Trigger the actual file download
