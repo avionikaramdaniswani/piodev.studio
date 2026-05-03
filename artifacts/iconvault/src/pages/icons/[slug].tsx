@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useRoute, Link } from "wouter";
-import { Download, Copy, Heart, Hash, Layers, Tag, ExternalLink, Code2, Sparkles } from "lucide-react";
+import { useRoute, Link, useLocation } from "wouter";
+import { Download, Copy, Heart, Hash, Layers, Tag, ExternalLink, Code2, Sparkles, UserPlus, X } from "lucide-react";
 
 import { useGetIconBySlug, useDownloadIcon, useToggleLike, useGetSimilarIcons } from "@workspace/api-client-react";
 
@@ -22,11 +22,13 @@ export default function IconDetail() {
   const downloadMutation = useDownloadIcon();
   const likeMutation = useToggleLike();
 
+  const [, navigate] = useLocation();
   const { user, tier, downloadsToday, quotaLimit, refreshProfile } = useAuth();
 
   const [likes, setLikes] = useState(0);
   const [iconColor, setIconColor] = useState("#0A0A0A");
   const [downloading, setDownloading] = useState(false);
+  const [showAnonLimitModal, setShowAnonLimitModal] = useState(false);
 
   const accentColor = icon ? ACCENT_COLORS[icon.id % ACCENT_COLORS.length] : ACCENT_COLORS[0];
 
@@ -65,15 +67,20 @@ export default function IconDetail() {
       });
 
       if (res.status === 429) {
-        // Quota exceeded
-        const data = await res.json() as { quota: number; used: number };
+        const data = await res.json() as { quota: number; used: number; reason?: string };
         setDownloading(false);
-        toast({
-          title: "KUOTA HABIS!",
-          description: `Kamu sudah mencapai batas ${data.quota} unduhan hari ini. Reset otomatis tengah malam, atau upgrade ke Plus.`,
-          className: "border-[3px] border-foreground rounded-none font-bold shadow-[4px_4px_0_#0A0A0A]",
-          style: { background: "#FF6B35", color: "white" },
-        });
+        if (data.reason === "anon_quota_exceeded") {
+          // Anonymous user hit their daily limit — show sign-up CTA modal
+          setShowAnonLimitModal(true);
+        } else {
+          // Logged-in free user hit their daily limit
+          toast({
+            title: "KUOTA HABIS!",
+            description: `Kamu sudah mencapai batas ${data.quota} unduhan hari ini. Reset otomatis tengah malam, atau upgrade ke Plus.`,
+            className: "border-[3px] border-foreground rounded-none font-bold shadow-[4px_4px_0_#0A0A0A]",
+            style: { background: "#FF6B35", color: "white" },
+          });
+        }
         return;
       }
 
@@ -113,13 +120,27 @@ export default function IconDetail() {
       const isPlus = tier === "plus";
       const remaining = isPlus ? "∞" : String(quotaLimit - downloadsToday - 1);
 
-      toast({
-        title: "DIUNDUH!",
-        description: isPlus
-          ? `${icon.name} berhasil diunduh.`
-          : `${icon.name} diunduh. Sisa kuota hari ini: ${remaining}`,
-        className: "border-[3px] border-foreground rounded-none bg-primary text-primary-foreground font-bold shadow-[4px_4px_0_#0A0A0A]",
-      });
+      if (!user) {
+        // Anonymous download — read remaining from response
+        const downloadData = await res.json().catch(() => null) as { used?: number } | null;
+        const used = downloadData?.used ?? 1;
+        const anonRemaining = 5 - used;
+        toast({
+          title: "DIUNDUH!",
+          description: anonRemaining > 0
+            ? `${icon.name} diunduh. Sisa ${anonRemaining} unduhan gratis hari ini — daftar untuk dapat 50/hari!`
+            : `${icon.name} diunduh. Kuota tamu habis, daftar gratis untuk lanjut!`,
+          className: "border-[3px] border-foreground rounded-none bg-primary text-primary-foreground font-bold shadow-[4px_4px_0_#0A0A0A]",
+        });
+      } else {
+        toast({
+          title: "DIUNDUH!",
+          description: isPlus
+            ? `${icon.name} berhasil diunduh.`
+            : `${icon.name} diunduh. Sisa kuota hari ini: ${remaining}`,
+          className: "border-[3px] border-foreground rounded-none bg-primary text-primary-foreground font-bold shadow-[4px_4px_0_#0A0A0A]",
+        });
+      }
     } catch {
       toast({
         title: "GAGAL",
@@ -173,6 +194,63 @@ export default function IconDetail() {
 
   return (
     <div className="py-8 max-w-6xl mx-auto">
+      {/* Anonymous limit reached modal */}
+      {showAnonLimitModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(10,10,10,0.7)" }}>
+          <div className="relative w-full max-w-md border-[4px] border-foreground bg-background shadow-[8px_8px_0_#0A0A0A]">
+            <button
+              onClick={() => setShowAnonLimitModal(false)}
+              className="absolute top-3 right-3 p-1 hover:opacity-60"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            {/* Accent strip */}
+            <div className="h-3 w-full border-b-[3px] border-foreground" style={{ background: "#FFE034" }} />
+            <div className="p-8">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-3 border-[3px] border-foreground" style={{ background: "#FFE034" }}>
+                  <Download className="w-6 h-6" />
+                </div>
+                <h2 className="text-2xl font-black leading-tight">BATAS UNDUHAN TAMU HABIS!</h2>
+              </div>
+              <p className="font-mono text-sm mb-2 opacity-70">
+                Kamu sudah menggunakan <strong>5/5 unduhan gratis</strong> hari ini sebagai tamu.
+              </p>
+              <div className="border-[3px] border-foreground p-4 mb-6" style={{ background: "#F0FFF4" }}>
+                <p className="font-black text-sm mb-1">Daftar gratis dan dapatkan:</p>
+                <ul className="font-mono text-sm space-y-1">
+                  <li>✓ <strong>50 unduhan/hari</strong> (10× lebih banyak)</li>
+                  <li>✓ Riwayat unduhan pribadi</li>
+                  <li>✓ Akses fitur eksklusif member</li>
+                </ul>
+              </div>
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={() => { setShowAnonLimitModal(false); navigate("/register"); }}
+                  className="nb-btn w-full py-3 font-black text-base flex items-center justify-center gap-2"
+                  style={{ background: "#FFE034" }}
+                >
+                  <UserPlus className="w-5 h-5" />
+                  DAFTAR GRATIS SEKARANG
+                </button>
+                <button
+                  onClick={() => { setShowAnonLimitModal(false); navigate("/login"); }}
+                  className="nb-btn w-full py-3 font-black text-base flex items-center justify-center gap-2 bg-card"
+                >
+                  Sudah punya akun? MASUK
+                </button>
+                <button
+                  onClick={() => setShowAnonLimitModal(false)}
+                  className="text-center font-mono text-xs opacity-50 hover:opacity-80 underline"
+                >
+                  Tutup, coba lagi besok
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Link href="/icons" className="inline-flex items-center gap-2 font-bold mb-8 hover:underline decoration-4">
         ← KEMBALI KE IKON
       </Link>

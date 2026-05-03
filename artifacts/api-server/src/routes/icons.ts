@@ -14,7 +14,39 @@ import {
 import { requireAuth, requireRole } from "../middlewares/requireAuth";
 
 const FREE_QUOTA = 50;
+const ANON_QUOTA = 5;
 const router = Router();
+
+// In-memory store for anonymous IP download tracking
+// Structure: Map<ip, { count: number; date: string }>
+const anonDownloadStore = new Map<string, { count: number; date: string }>();
+
+function getClientIp(req: Request): string {
+  const forwarded = req.headers["x-forwarded-for"];
+  if (forwarded) {
+    return (Array.isArray(forwarded) ? forwarded[0] : forwarded).split(",")[0].trim();
+  }
+  return req.socket?.remoteAddress ?? "unknown";
+}
+
+function checkAnonQuota(ip: string): { allowed: boolean; used: number } {
+  const today = new Date().toISOString().split("T")[0];
+  const entry = anonDownloadStore.get(ip);
+  if (!entry || entry.date !== today) {
+    return { allowed: true, used: 0 };
+  }
+  return { allowed: entry.count < ANON_QUOTA, used: entry.count };
+}
+
+function incrementAnonQuota(ip: string): void {
+  const today = new Date().toISOString().split("T")[0];
+  const entry = anonDownloadStore.get(ip);
+  if (!entry || entry.date !== today) {
+    anonDownloadStore.set(ip, { count: 1, date: today });
+  } else {
+    anonDownloadStore.set(ip, { count: entry.count + 1, date: today });
+  }
+}
 
 const CATEGORY_COLORS: Record<string, string> = {
   UI: "#FFE034",
@@ -209,7 +241,7 @@ router.get("/:slug", async (req, res) => {
 });
 
 // POST /icons/:id/download
-// Optional auth: if JWT provided, checks and records quota. Anonymous users always allowed.
+// Anonymous users: 5/day per IP. Logged-in free users: 50/day. Plus: unlimited.
 router.post("/:id/download", async (req: Request, res) => {
   const parsed = DownloadIconParams.safeParse(req.params);
   if (!parsed.success) return res.status(400).json({ error: "Invalid id" });
@@ -287,7 +319,20 @@ router.post("/:id/download", async (req: Request, res) => {
     }
   }
 
-  // Anonymous or auth failed: just increment counter
+  // Anonymous or auth failed: check IP-based quota then increment counter
+  const ip = getClientIp(req);
+  const anonQuota = checkAnonQuota(ip);
+  if (!anonQuota.allowed) {
+    return res.status(429).json({
+      allowed: false,
+      reason: "anon_quota_exceeded",
+      quota: ANON_QUOTA,
+      used: anonQuota.used,
+    });
+  }
+
+  incrementAnonQuota(ip);
+
   const [icon] = await db
     .update(iconsTable)
     .set({ downloads: sql`${iconsTable.downloads} + 1` })
@@ -295,7 +340,8 @@ router.post("/:id/download", async (req: Request, res) => {
     .returning({ downloads: iconsTable.downloads });
 
   if (!icon) return res.status(404).json({ error: "Not found" });
-  return res.json({ allowed: true, downloads: icon.downloads });
+  const newEntry = anonDownloadStore.get(ip);
+  return res.json({ allowed: true, downloads: icon.downloads, used: newEntry?.count ?? 1, quota: ANON_QUOTA });
 });
 
 // POST /icons/:id/like
