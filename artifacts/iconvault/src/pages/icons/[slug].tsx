@@ -472,54 +472,54 @@ export default function IconDetail() {
       {/* Download Format Modal */}
       {showDownloadModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: "rgba(10,10,10,0.7)" }}
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4"
+          style={{ background: "rgba(10,10,10,0.65)" }}
           onClick={() => setShowDownloadModal(false)}
         >
           <div
-            className="border-[4px] border-foreground bg-background w-full max-w-md shadow-[8px_8px_0_#0A0A0A]"
+            className="border-t-[4px] sm:border-[4px] border-foreground bg-background w-full sm:max-w-sm shadow-[0_-4px_0_#0A0A0A] sm:shadow-[6px_6px_0_#0A0A0A] max-h-[82vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex items-center justify-between border-b-[4px] border-foreground px-6 py-4" style={{ background: accentColor }}>
-              <h2 className="text-2xl font-black tracking-tight">PILIH FORMAT</h2>
-              <button onClick={() => setShowDownloadModal(false)} className="border-[3px] border-foreground bg-white p-1 hover:bg-gray-100">
-                <X className="w-5 h-5" />
+            <div className="flex items-center justify-between border-b-[3px] border-foreground px-4 py-3 sticky top-0 z-10" style={{ background: accentColor }}>
+              <h2 className="text-lg font-black tracking-tight">PILIH FORMAT UNDUHAN</h2>
+              <button onClick={() => setShowDownloadModal(false)} className="border-[2px] border-foreground bg-white p-1 hover:bg-gray-100 flex-shrink-0">
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="p-6 flex flex-col gap-4">
+            <div className="p-4 flex flex-col gap-3">
               {/* SVG Option */}
               <button
                 onClick={() => handleDownload("svg")}
-                className="nb-btn bg-card flex items-center gap-4 text-left py-4 px-5"
+                className="nb-btn bg-card flex items-center gap-3 text-left py-3 px-4"
               >
-                <div className="border-[3px] border-foreground p-2" style={{ background: "#FFE034" }}>
-                  <FileCode2 className="w-6 h-6" />
+                <div className="border-[2px] border-foreground p-1.5 flex-shrink-0" style={{ background: "#FFE034" }}>
+                  <FileCode2 className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-lg font-black">SVG</p>
-                  <p className="font-mono text-xs text-muted-foreground">Scalable Vector — infinitely sharp, semua ukuran</p>
+                  <p className="text-base font-black">SVG</p>
+                  <p className="font-mono text-xs text-muted-foreground leading-tight">Scalable Vector — tajam di semua ukuran</p>
                 </div>
               </button>
 
               {/* PNG Option */}
-              <div className="border-[3px] border-foreground p-5" style={{ background: "#F8F8F8" }}>
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="border-[3px] border-foreground p-2" style={{ background: "#4DBBFF" }}>
-                    <FileImage className="w-6 h-6" />
+              <div className="border-[3px] border-foreground p-4" style={{ background: "#F8F8F8" }}>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="border-[2px] border-foreground p-1.5 flex-shrink-0" style={{ background: "#4DBBFF" }}>
+                    <FileImage className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-lg font-black">PNG</p>
-                    <p className="font-mono text-xs text-muted-foreground">Raster transparan — pilih ukuran di bawah</p>
+                    <p className="text-base font-black">PNG</p>
+                    <p className="font-mono text-xs text-muted-foreground leading-tight">Raster transparan — pilih ukuran</p>
                   </div>
                 </div>
-                <div className="grid grid-cols-4 gap-2 mb-4">
+                <div className="grid grid-cols-4 gap-1.5 mb-3">
                   {PNG_SIZES.map((size) => (
                     <button
                       key={size}
                       onClick={() => setSelectedPngSize(size)}
-                      className={`border-[3px] border-foreground py-2 font-black font-mono text-sm transition-colors ${
+                      className={`border-[2px] border-foreground py-1.5 font-black font-mono text-xs transition-colors ${
                         selectedPngSize === size
                           ? "bg-foreground text-background"
                           : "bg-white hover:bg-gray-100"
@@ -531,7 +531,7 @@ export default function IconDetail() {
                 </div>
                 <button
                   onClick={() => handleDownload("png", selectedPngSize)}
-                  className="nb-btn bg-primary w-full flex justify-center items-center gap-2 py-3"
+                  className="nb-btn bg-primary w-full flex justify-center items-center gap-2 py-2.5 text-sm"
                 >
                   <Download className="w-4 h-4" />
                   UNDUH PNG {selectedPngSize}×{selectedPngSize}
@@ -541,14 +541,14 @@ export default function IconDetail() {
               {/* PDF Option */}
               <button
                 onClick={() => handleDownload("pdf")}
-                className="nb-btn bg-card flex items-center gap-4 text-left py-4 px-5"
+                className="nb-btn bg-card flex items-center gap-3 text-left py-3 px-4"
               >
-                <div className="border-[3px] border-foreground p-2" style={{ background: "#FF6B9D" }}>
-                  <FileText className="w-6 h-6" />
+                <div className="border-[2px] border-foreground p-1.5 flex-shrink-0" style={{ background: "#FF6B9D" }}>
+                  <FileText className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-lg font-black">PDF</p>
-                  <p className="font-mono text-xs text-muted-foreground">512×512px — siap print, siap presentasi</p>
+                  <p className="text-base font-black">PDF</p>
+                  <p className="font-mono text-xs text-muted-foreground leading-tight">512×512px — siap print & presentasi</p>
                 </div>
               </button>
             </div>
