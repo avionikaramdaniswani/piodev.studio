@@ -83,7 +83,7 @@ export default function IconsList() {
       </div>
 
       {/* ── Mobile filter bar (single scrollable row) ── */}
-      <div className="lg:hidden -mx-4 px-4 overflow-x-auto">
+      <div className="lg:hidden -mx-4 px-4 overflow-x-auto [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: "none" }}>
         <div className="flex items-center gap-2 pb-2" style={{ minWidth: "max-content" }}>
           {/* Category chips */}
           <span className="text-xs font-black opacity-40 shrink-0 flex items-center gap-1">
