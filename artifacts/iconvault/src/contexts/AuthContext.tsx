@@ -46,7 +46,8 @@ interface ProfileData {
   quotaLimit: number;
 }
 
-async function fetchProfile(userId: string): Promise<ProfileData> {
+// Returns null when the auth account no longer exists (FK violation)
+async function fetchProfile(userId: string): Promise<ProfileData | null> {
   try {
     const { data, error } = await supabase
       .from("profiles")
@@ -68,7 +69,7 @@ async function fetchProfile(userId: string): Promise<ProfileData> {
       };
     }
 
-    // Try minimal query (new columns may not exist yet)
+    // Try minimal query
     const { data: minimal, error: minErr } = await supabase
       .from("profiles")
       .select("role, tier")
@@ -86,10 +87,15 @@ async function fetchProfile(userId: string): Promise<ProfileData> {
       };
     }
 
-    // Row doesn't exist — create it
-    await supabase
+    // Row doesn't exist — attempt to create it
+    const { error: upsertErr } = await supabase
       .from("profiles")
       .upsert({ id: userId, role: "user", tier: "free" }, { onConflict: "id" });
+
+    if (upsertErr) {
+      // FK violation (23503) = user was deleted from auth.users — ghost session
+      if (upsertErr.code === "23503") return null;
+    }
 
     return { role: "user", tier: "free", username: null, downloadsToday: 0, quotaLimit: FREE_QUOTA };
   } catch {
@@ -107,7 +113,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [quotaLimit, setQuotaLimit] = useState(FREE_QUOTA);
   const [loading, setLoading] = useState(true);
 
-  // Track mounted state via ref to avoid stale closure issues
   const mountedRef = useRef(true);
 
   const applyProfile = useCallback((p: ProfileData) => {
@@ -127,16 +132,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuthTokenGetter(null);
   }, []);
 
+  // Safe sign-out: deferred so it never runs inside onAuthStateChange callback
+  const safeSignOut = useCallback(() => {
+    setTimeout(() => {
+      supabase.auth.signOut().catch(() => {});
+    }, 0);
+  }, []);
+
   const refreshProfile = useCallback(async () => {
     const { data: { user: currentUser } } = await supabase.auth.getUser();
     if (!currentUser) return;
     const profile = await fetchProfile(currentUser.id);
-    if (mountedRef.current) applyProfile(profile);
-  }, [applyProfile]);
+    if (!mountedRef.current) return;
+    if (profile === null) {
+      safeSignOut();
+      return;
+    }
+    applyProfile(profile);
+  }, [applyProfile, safeSignOut]);
 
   const updateUsername = useCallback(async (newUsername: string): Promise<ProfileUpdateResult> => {
     const cleanUsername = newUsername.trim().toLowerCase().replace(/[^a-z0-9_]/g, "");
-
     if (!cleanUsername) return { error: "Nama pengguna tidak boleh kosong." };
     if (cleanUsername.length < 3) return { error: "Nama pengguna minimal 3 karakter." };
 
@@ -160,7 +176,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     mountedRef.current = true;
 
-    // Set auth token getter so protected API calls include the Supabase JWT
     setAuthTokenGetter(async () => {
       const { data: { session: s } } = await supabase.auth.getSession();
       return s?.access_token ?? null;
@@ -174,14 +189,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(newSession?.user ?? null);
 
         if (newSession?.user) {
-          // Register token getter with the fresh session
+          // Validate server-side that the auth account still exists
+          // getUser() is safe to call here (read-only, no deadlock risk)
+          const { error: userErr } = await supabase.auth.getUser();
+
+          if (!mountedRef.current) return;
+
+          if (userErr) {
+            // JWT rejected by server — account deleted or token invalid
+            // Use safeSignOut (deferred) to avoid calling signOut inside the callback
+            clearProfile();
+            setUser(null);
+            setSession(null);
+            if (mountedRef.current) setLoading(false);
+            safeSignOut();
+            return;
+          }
+
           setAuthTokenGetter(async () => {
             const { data: { session: s } } = await supabase.auth.getSession();
             return s?.access_token ?? null;
           });
 
           const profile = await fetchProfile(newSession.user.id);
-          if (mountedRef.current) applyProfile(profile);
+          if (!mountedRef.current) return;
+
+          if (profile === null) {
+            // Profile creation failed with FK violation = account deleted from auth.users
+            clearProfile();
+            setUser(null);
+            setSession(null);
+            if (mountedRef.current) setLoading(false);
+            safeSignOut();
+            return;
+          }
+
+          applyProfile(profile);
         } else {
           clearProfile();
         }
@@ -190,30 +233,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
     );
 
-    // Periodic server-side session validation (every 5 minutes)
-    // Catches deleted accounts between token refreshes
+    // Periodic server-side validation every 5 minutes
     const validationInterval = setInterval(async () => {
       if (!mountedRef.current) return;
-      const currentSession = (await supabase.auth.getSession()).data.session;
-      if (!currentSession) return; // Not logged in, nothing to validate
-
-      const { error } = await supabase.auth.getUser();
-      if (error && mountedRef.current) {
-        // Session is invalid (account deleted etc.) — sign out gracefully
-        await supabase.auth.signOut();
-      }
-    }, 5 * 60 * 1000);
-
-    // Also validate on window focus
-    const onFocus = async () => {
-      if (!mountedRef.current) return;
-      const currentSession = (await supabase.auth.getSession()).data.session;
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
       if (!currentSession) return;
 
       const { error } = await supabase.auth.getUser();
-      if (error && mountedRef.current) {
-        await supabase.auth.signOut();
-      }
+      if (error && mountedRef.current) safeSignOut();
+    }, 5 * 60 * 1000);
+
+    // Validate on window focus
+    const onFocus = async () => {
+      if (!mountedRef.current) return;
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      if (!currentSession) return;
+
+      const { error } = await supabase.auth.getUser();
+      if (error && mountedRef.current) safeSignOut();
     };
     window.addEventListener("focus", onFocus);
 
@@ -228,7 +265,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       window.removeEventListener("focus", onFocus);
       clearTimeout(timeout);
     };
-  }, [applyProfile, clearProfile]);
+  }, [applyProfile, clearProfile, safeSignOut]);
 
   const signOut = async () => {
     await supabase.auth.signOut();
