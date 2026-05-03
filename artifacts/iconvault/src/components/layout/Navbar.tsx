@@ -1,12 +1,12 @@
 import { Link, useLocation } from "wouter";
-import { Menu, LogIn, LogOut, User } from "lucide-react";
+import { Menu, LogIn, LogOut, User, Shield } from "lucide-react";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
 
 export function Navbar() {
   const [open, setOpen] = useState(false);
-  const { user, loading, signOut } = useAuth();
+  const { user, role, loading, signOut } = useAuth();
   const [, navigate] = useLocation();
 
   const handleSignOut = async () => {
@@ -20,9 +20,32 @@ export function Navbar() {
     if (user) {
       return (
         <div className={`flex ${mobile ? "flex-col" : "flex-row"} items-start md:items-center gap-3`}>
-          <span className="font-mono text-xs opacity-50 truncate max-w-[160px]" title={user.email}>
-            {user.email}
-          </span>
+          <div className="flex flex-col items-start">
+            <span className="font-mono text-xs opacity-50 truncate max-w-[160px]" title={user.email}>
+              {user.email}
+            </span>
+            {role && role !== "user" && (
+              <span
+                className="font-mono text-[10px] font-black px-1 border-[2px] border-foreground"
+                style={{
+                  background: role === "admin" ? "#FF6B35" : role === "staff" ? "#4DBBFF" : "transparent",
+                  color: role === "admin" || role === "staff" ? "white" : "inherit",
+                }}
+              >
+                {role.toUpperCase()}
+              </span>
+            )}
+          </div>
+          {(role === "admin" || role === "staff") && (
+            <Link
+              href="/admin"
+              onClick={() => setOpen(false)}
+              className="nb-btn px-3 py-1 text-sm font-black flex items-center gap-1"
+              style={{ background: "#4DBBFF" }}
+            >
+              <Shield className="w-4 h-4" /> ADMIN
+            </Link>
+          )}
           <button
             onClick={handleSignOut}
             className="nb-btn px-3 py-1 text-sm font-black flex items-center gap-1"
@@ -60,7 +83,6 @@ export function Navbar() {
       <Link href="/" onClick={() => setOpen(false)} className="font-bold text-lg hover:underline underline-offset-4 decoration-4">HOME</Link>
       <Link href="/icons" onClick={() => setOpen(false)} className="font-bold text-lg hover:underline underline-offset-4 decoration-4">ICONS</Link>
       <Link href="/tools" onClick={() => setOpen(false)} className="font-bold text-lg hover:underline underline-offset-4 decoration-4">TOOLS</Link>
-      <Link href="/upload" onClick={() => setOpen(false)} className="font-bold text-lg hover:underline underline-offset-4 decoration-4 text-primary bg-foreground px-4 py-1 border-[3px] border-foreground">UPLOAD</Link>
       {mobile && <div className="border-t-[3px] border-foreground pt-4 w-full"><AuthButtons mobile /></div>}
     </>
   );

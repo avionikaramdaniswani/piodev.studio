@@ -20,6 +20,7 @@ import GradientGenerator from "@/pages/tools/gradient-generator";
 import UploadIcon from "@/pages/upload";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
+import AdminPage from "@/pages/admin";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -50,6 +51,7 @@ function Router() {
         <Route path="/upload" component={UploadIcon} />
         <Route path="/login" component={Login} />
         <Route path="/register" component={Register} />
+        <Route path="/admin" component={AdminPage} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
