@@ -25,7 +25,7 @@ export default function IconDetail() {
   const { user, tier, downloadsToday, quotaLimit, refreshProfile } = useAuth();
 
   const [likes, setLikes] = useState(0);
-  const [bgColor, setBgColor] = useState<"white" | "#FFE034" | "#0A0A0A">("white");
+  const [iconColor, setIconColor] = useState<"dark" | "accent" | "white">("dark");
   const [downloading, setDownloading] = useState(false);
 
   const accentColor = icon ? ACCENT_COLORS[icon.id % ACCENT_COLORS.length] : ACCENT_COLORS[0];
@@ -154,30 +154,35 @@ export default function IconDetail() {
             <div className="h-4 w-full border-b-[3px] border-foreground" style={{ backgroundColor: accentColor }} />
             <div
               className="flex items-center justify-center p-12 h-64 transition-colors duration-300"
-              style={{ backgroundColor: bgColor, color: bgColor === "#0A0A0A" ? "white" : "#0A0A0A" }}
+              style={{
+                backgroundColor: iconColor === "white" ? "#0A0A0A" : "white",
+                color: iconColor === "accent" ? accentColor : iconColor === "dark" ? "#0A0A0A" : "white",
+              }}
             >
               <div
-                className="w-full h-full max-w-[160px] max-h-[160px] [&>svg]:w-full [&>svg]:h-full"
+                className="w-full h-full max-w-[160px] max-h-[160px] [&>svg]:w-full [&>svg]:h-full [&>svg]:stroke-current [&>svg_*]:stroke-current"
                 dangerouslySetInnerHTML={{ __html: icon.svgContent }}
               />
             </div>
           </div>
 
-          <div className="flex justify-center gap-3">
+          <div className="flex justify-center gap-3 items-center">
+            <span className="font-mono text-xs font-bold mr-1 opacity-50">WARNA IKON:</span>
             <button
-              onClick={() => setBgColor("white")}
-              className={`w-10 h-10 border-[3px] border-foreground shadow-[2px_2px_0_#0A0A0A] bg-white ${bgColor === "white" ? "outline outline-4 outline-offset-2 outline-primary" : ""}`}
-              title="Latar Putih"
+              onClick={() => setIconColor("dark")}
+              className={`w-10 h-10 border-[3px] border-foreground shadow-[2px_2px_0_#0A0A0A] bg-[#0A0A0A] ${iconColor === "dark" ? "outline outline-4 outline-offset-2 outline-primary" : ""}`}
+              title="Ikon Hitam"
             />
             <button
-              onClick={() => setBgColor("#FFE034")}
-              className={`w-10 h-10 border-[3px] border-foreground shadow-[2px_2px_0_#0A0A0A] bg-[#FFE034] ${bgColor === "#FFE034" ? "outline outline-4 outline-offset-2 outline-foreground" : ""}`}
-              title="Latar Kuning"
+              onClick={() => setIconColor("accent")}
+              className={`w-10 h-10 border-[3px] border-foreground shadow-[2px_2px_0_#0A0A0A] ${iconColor === "accent" ? "outline outline-4 outline-offset-2 outline-foreground" : ""}`}
+              style={{ backgroundColor: accentColor }}
+              title="Ikon Warna Aksen"
             />
             <button
-              onClick={() => setBgColor("#0A0A0A")}
-              className={`w-10 h-10 border-[3px] border-foreground shadow-[2px_2px_0_#0A0A0A] bg-[#0A0A0A] ${bgColor === "#0A0A0A" ? "outline outline-4 outline-offset-2 outline-primary" : ""}`}
-              title="Latar Hitam"
+              onClick={() => setIconColor("white")}
+              className={`w-10 h-10 border-[3px] border-foreground shadow-[2px_2px_0_#0A0A0A] bg-white ${iconColor === "white" ? "outline outline-4 outline-offset-2 outline-primary" : ""}`}
+              title="Ikon Putih (latar gelap)"
             />
           </div>
         </div>
