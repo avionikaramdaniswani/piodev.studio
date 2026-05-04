@@ -1,19 +1,18 @@
 import { useEffect, useState, useCallback } from "react";
-import { Ticket, Plus, Trash2, Copy, Check, RefreshCw } from "lucide-react";
+import { Ticket, Plus, Trash2, Copy, Check, RefreshCw, Pencil, X } from "lucide-react";
 import { RoleGuard } from "@/components/shared/RoleGuard";
 import { AdminLayout } from "@/components/layout/AdminLayout";
-import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 
 interface RedeemCode {
   id: string;
   code: string;
   label: string | null;
-  duration_days: number;
-  expires_at: string | null;
-  redeemed_by: string | null;
-  redeemed_at: string | null;
-  created_at: string;
+  durationDays: number;
+  expiresAt: string | null;
+  redeemedBy: string | null;
+  redeemedAt: string | null;
+  createdAt: string;
 }
 
 async function getAuthHeaders() {
@@ -32,6 +31,84 @@ function CopyButton({ text }: { text: string }) {
     <button onClick={handleCopy} className="opacity-40 hover:opacity-100 transition-opacity ml-1" title="Salin kode">
       {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
     </button>
+  );
+}
+
+function EditLabelCell({ id, label, onSaved }: { id: string; label: string | null; onSaved: (id: string, label: string | null) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(label ?? "");
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    setSaving(true);
+    const headers = await getAuthHeaders();
+    const res = await fetch(`/api/admin/codes/${id}`, {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify({ label: value }),
+    });
+    if (res.ok) {
+      onSaved(id, value.trim() || null);
+      setEditing(false);
+    }
+    setSaving(false);
+  };
+
+  const handleCancel = () => {
+    setValue(label ?? "");
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <td className="py-2 pr-3 max-w-[160px]">
+        <div className="flex items-center gap-1">
+          <input
+            autoFocus
+            value={value}
+            onChange={e => setValue(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") handleCancel(); }}
+            className="nb-input px-2 py-1 text-xs w-full font-mono"
+            placeholder="Tambah catatan..."
+            maxLength={100}
+            disabled={saving}
+          />
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="border-[2px] border-foreground p-1 hover:bg-green-100 disabled:opacity-40"
+            title="Simpan"
+          >
+            <Check className="w-3 h-3" />
+          </button>
+          <button
+            onClick={handleCancel}
+            disabled={saving}
+            className="border-[2px] border-foreground p-1 hover:bg-red-100 disabled:opacity-40"
+            title="Batal"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </div>
+      </td>
+    );
+  }
+
+  return (
+    <td className="py-3 pr-3 max-w-[160px]">
+      <div className="flex items-center gap-1 group">
+        <span className="opacity-70 truncate text-xs" title={label ?? ""}>
+          {label ?? <span className="opacity-30 italic">–</span>}
+        </span>
+        <button
+          onClick={() => setEditing(true)}
+          className="opacity-0 group-hover:opacity-50 hover:!opacity-100 transition-opacity shrink-0"
+          title="Edit catatan"
+        >
+          <Pencil className="w-3 h-3" />
+        </button>
+      </div>
+    </td>
   );
 }
 
@@ -198,8 +275,12 @@ function AdminCodes() {
     setDeletingId(null);
   };
 
+  const handleLabelSaved = (id: string, label: string | null) => {
+    setCodes(prev => prev.map(c => c.id === id ? { ...c, label } : c));
+  };
+
   const total = codes.length;
-  const redeemed = codes.filter(c => c.redeemed_by).length;
+  const redeemed = codes.filter(c => c.redeemedBy).length;
   const available = total - redeemed;
 
   const formatDate = (iso: string | null) => {
@@ -208,7 +289,7 @@ function AdminCodes() {
   };
 
   const isExpired = (c: RedeemCode) =>
-    !c.redeemed_by && c.expires_at && new Date() > new Date(c.expires_at);
+    !c.redeemedBy && c.expiresAt && new Date() > new Date(c.expiresAt);
 
   return (
     <AdminLayout title="REDEEM CODES">
@@ -274,11 +355,11 @@ function AdminCodes() {
                 <thead>
                   <tr className="border-b-[3px] border-foreground">
                     <th className="text-left py-2 pr-4 font-black">KODE</th>
-                    <th className="text-left py-2 pr-3 font-black">LABEL</th>
+                    <th className="text-left py-2 pr-3 font-black">CATATAN</th>
                     <th className="text-left py-2 pr-3 font-black whitespace-nowrap">DURASI</th>
                     <th className="text-left py-2 pr-3 font-black whitespace-nowrap">KEDALUWARSA</th>
                     <th className="text-left py-2 pr-3 font-black">STATUS</th>
-                    <th className="text-left py-2 font-black">DIPAKAI</th>
+                    <th className="text-left py-2 pr-3 font-black whitespace-nowrap">TGL DIPAKAI</th>
                     <th className="py-2" />
                   </tr>
                 </thead>
@@ -291,22 +372,18 @@ function AdminCodes() {
                           <div className="flex items-center">
                             <span
                               className="font-black text-xs px-2 py-1 border-[2px] border-foreground tracking-widest"
-                              style={{ background: c.redeemed_by ? "#e5e5e5" : "#FFE034", color: "#0A0A0A" }}
+                              style={{ background: c.redeemedBy ? "#e5e5e5" : "#FFE034", color: "#0A0A0A" }}
                             >
                               {c.code}
                             </span>
-                            {!c.redeemed_by && <CopyButton text={c.code} />}
+                            {!c.redeemedBy && <CopyButton text={c.code} />}
                           </div>
                         </td>
-                        <td className="py-3 pr-3 max-w-[120px]">
-                          <span className="opacity-70 truncate block" title={c.label ?? ""}>
-                            {c.label ?? <span className="opacity-30 italic">–</span>}
-                          </span>
-                        </td>
-                        <td className="py-3 pr-3 whitespace-nowrap opacity-70">{c.duration_days} hari</td>
-                        <td className="py-3 pr-3 whitespace-nowrap opacity-70">{formatDate(c.expires_at)}</td>
+                        <EditLabelCell id={c.id} label={c.label} onSaved={handleLabelSaved} />
+                        <td className="py-3 pr-3 whitespace-nowrap opacity-70">{c.durationDays} hari</td>
+                        <td className="py-3 pr-3 whitespace-nowrap opacity-70">{formatDate(c.expiresAt)}</td>
                         <td className="py-3 pr-3">
-                          {c.redeemed_by ? (
+                          {c.redeemedBy ? (
                             <span className="font-black text-xs px-2 py-1 border-[2px] border-foreground" style={{ background: "#4DBBFF" }}>
                               DIPAKAI
                             </span>
@@ -321,10 +398,10 @@ function AdminCodes() {
                           )}
                         </td>
                         <td className="py-3 pr-3 opacity-50 whitespace-nowrap text-xs">
-                          {formatDate(c.redeemed_at)}
+                          {formatDate(c.redeemedAt)}
                         </td>
                         <td className="py-3">
-                          {!c.redeemed_by && (
+                          {!c.redeemedBy && (
                             <button
                               onClick={() => handleDelete(c.id)}
                               disabled={deletingId === c.id}

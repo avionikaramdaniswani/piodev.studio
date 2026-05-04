@@ -45,6 +45,19 @@ router.post("/generate", requireAuth, requireRole("admin"), async (req: Authenti
   return res.json(inserted);
 });
 
+// PATCH /api/admin/codes/:id — edit label of a code (admin only)
+router.patch("/:id", requireAuth, requireRole("admin"), async (req, res) => {
+  const { id } = req.params;
+  const { label } = req.body as { label?: string };
+  const [updated] = await db
+    .update(redeemCodesTable)
+    .set({ label: label?.trim() || null })
+    .where(eq(redeemCodesTable.id, id))
+    .returning();
+  if (!updated) return res.status(404).json({ error: "Kode tidak ditemukan." });
+  return res.json(updated);
+});
+
 // DELETE /api/admin/codes/:id — delete a code (admin only)
 router.delete("/:id", requireAuth, requireRole("admin"), async (req, res) => {
   const { id } = req.params;
