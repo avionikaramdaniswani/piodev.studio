@@ -16,7 +16,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/admin", label: "DASHBOARD", icon: LayoutDashboard, exact: true, accent: "#FF6B35" },
   { href: "/admin/icons", label: "KELOLA IKON", icon: Grid, accent: "#FFE034" },
   { href: "/admin/users", label: "KELOLA PENGGUNA", icon: Users, adminOnly: true, accent: "#4DBBFF" },
-  { href: "/upload", label: "UPLOAD IKON", icon: Upload, accent: "#00E676" },
+  { href: "/admin/upload", label: "UPLOAD IKON", icon: Upload, accent: "#00E676" },
 ];
 
 function SidebarNav({ onClose }: { onClose?: () => void }) {

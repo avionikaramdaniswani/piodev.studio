@@ -17,7 +17,7 @@ function AdminDashboard() {
   ];
 
   const QUICK_ACTIONS = [
-    { href: "/admin/upload", label: "UPLOAD IKON BARU", desc: "Tambah ikon ke koleksi", icon: Upload, bg: "#FFE034" },
+    { href: "/admin/upload", label: "UPLOAD IKON BARU", desc: "Tambah ikon ke koleksi", icon: Upload, bg: "#00E676" },
     { href: "/admin/icons", label: "KELOLA SEMUA IKON", desc: "Edit, hapus, kelola ikon", icon: Grid, bg: "#4DBBFF" },
     ...(role === "admin" ? [{ href: "/admin/users", label: "KELOLA PENGGUNA", desc: "Atur role & tier user", icon: Users, bg: "#FF6B9D" }] : []),
   ];
