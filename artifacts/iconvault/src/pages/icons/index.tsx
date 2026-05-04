@@ -208,9 +208,9 @@ export default function IconsList() {
         {/* Icon Grid */}
         <div className="flex-1 w-full min-w-0">
           {loadingIcons ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
               {[...Array(20)].map((_, i) => (
-                <div key={i} className="nb-card h-40 bg-muted animate-pulse" />
+                <div key={i} className="nb-card aspect-square bg-muted animate-pulse" />
               ))}
             </div>
           ) : (Array.isArray(iconData?.icons) ? iconData!.icons.length : 0) === 0 ? (
@@ -225,7 +225,7 @@ export default function IconsList() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 lg:gap-5 mb-10">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 lg:gap-4 mb-10">
                 {(Array.isArray(iconData?.icons) ? iconData!.icons : []).map((icon, i) => (
                   <IconCard key={icon.id} icon={icon} index={i} />
                 ))}

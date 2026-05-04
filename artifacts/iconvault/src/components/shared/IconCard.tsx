@@ -186,21 +186,21 @@ export function IconCard({ icon, index }: IconCardProps) {
 
   return (
     <>
-      <Link href={`/icons/${icon.slug}`} className="group block">
+      <Link href={`/icons/${icon.slug}`} className="group block aspect-square">
         <div className="nb-card h-full flex flex-col relative overflow-hidden transition-transform duration-200 group-hover:-translate-y-1 group-hover:shadow-[6px_6px_0_#0A0A0A]">
-          <div className="h-3 w-full border-b-[3px] border-foreground" style={{ backgroundColor: accentColor }} />
+          <div className="h-2.5 w-full border-b-[3px] border-foreground shrink-0" style={{ backgroundColor: accentColor }} />
 
-          <div className="flex-1 flex items-center justify-center p-8 bg-card border-b-[3px] border-foreground relative">
+          <div className="flex-1 flex items-center justify-center p-4 bg-card border-b-[3px] border-foreground relative min-h-0">
             {/* Category badge — top-left overlay */}
             <span
-              className="absolute top-2 left-2 font-black text-[9px] px-1.5 py-0.5 border-[2px] border-foreground leading-none z-10"
+              className="absolute top-1.5 left-1.5 font-black text-[9px] px-1.5 py-0.5 border-[2px] border-foreground leading-none z-10"
               style={{ background: accentColor }}
             >
               {icon.category}
             </span>
 
             <div
-              className="w-16 h-16 overflow-hidden [&>svg]:text-foreground"
+              className="w-full h-full overflow-hidden [&>svg]:text-foreground"
               dangerouslySetInnerHTML={{ __html: normalizeSvg(icon.svgContent) }}
             />
             <div className="absolute inset-0 bg-background/90 hidden sm:flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity gap-3">
