@@ -13,7 +13,7 @@ function AdminDashboard() {
     { label: "TOTAL IKON", value: stats?.totalIcons ?? "–", icon: <Grid className="w-6 h-6" />, bg: "#FFE034" },
     { label: "TOTAL UNDUHAN", value: stats?.totalDownloads ?? "–", icon: <Download className="w-6 h-6" />, bg: "#FF6B9D" },
     { label: "TOTAL SUKA", value: stats?.totalLikes ?? "–", icon: <Heart className="w-6 h-6" />, bg: "#4DBBFF" },
-    { label: "PENGGUNA PLUS", value: "–", icon: <Sparkles className="w-6 h-6" />, bg: "#00E676" },
+    { label: "PENGGUNA PLUS", value: stats?.plusUsers ?? "–", icon: <Sparkles className="w-6 h-6" />, bg: "#00E676" },
   ];
 
   const QUICK_ACTIONS = [

@@ -85,8 +85,10 @@ export interface UpdateIconBody {
 export interface IconStats {
   totalIcons: number;
   totalDownloads: number;
+  totalLikes: number;
   totalCategories: number;
   totalTools: number;
+  plusUsers: number;
 }
 
 export interface CategoryCount {

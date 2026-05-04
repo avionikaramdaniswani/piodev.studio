@@ -168,23 +168,27 @@ router.get("/featured", async (_req, res) => {
 
 // GET /icons/stats
 router.get("/stats", async (_req, res) => {
-  const [{ totalIcons }] = await db
-    .select({ totalIcons: sql<number>`count(*)::int` })
+  const [{ totalIcons, totalDownloads, totalLikes, totalCategories }] = await db
+    .select({
+      totalIcons: sql<number>`count(*)::int`,
+      totalDownloads: sql<number>`coalesce(sum(downloads), 0)::int`,
+      totalLikes: sql<number>`coalesce(sum(likes), 0)::int`,
+      totalCategories: sql<number>`count(distinct category)::int`,
+    })
     .from(iconsTable);
 
-  const [{ totalDownloads }] = await db
-    .select({ totalDownloads: sql<number>`coalesce(sum(downloads), 0)::int` })
-    .from(iconsTable);
-
-  const [{ totalCategories }] = await db
-    .select({ totalCategories: sql<number>`count(distinct category)::int` })
-    .from(iconsTable);
+  const [{ plusUsers }] = await db
+    .select({ plusUsers: sql<number>`count(*)::int` })
+    .from(profilesTable)
+    .where(sql`tier = 'plus'`);
 
   return res.json({
     totalIcons,
     totalDownloads,
+    totalLikes,
     totalCategories,
     totalTools: 8,
+    plusUsers,
   });
 });
 
