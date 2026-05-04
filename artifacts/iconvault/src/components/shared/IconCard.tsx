@@ -190,6 +190,14 @@ export function IconCard({ icon, index }: IconCardProps) {
           <div className="h-3 w-full border-b-[3px] border-foreground" style={{ backgroundColor: accentColor }} />
 
           <div className="flex-1 flex items-center justify-center p-8 bg-card border-b-[3px] border-foreground relative">
+            {/* Category badge — top-left overlay */}
+            <span
+              className="absolute top-2 left-2 font-black text-[9px] px-1.5 py-0.5 border-[2px] border-foreground leading-none z-10"
+              style={{ background: accentColor }}
+            >
+              {icon.category}
+            </span>
+
             <div
               className="w-16 h-16 [&>svg]:w-full [&>svg]:h-full [&>svg]:text-foreground"
               dangerouslySetInnerHTML={{ __html: icon.svgContent }}
@@ -206,24 +214,18 @@ export function IconCard({ icon, index }: IconCardProps) {
             </div>
           </div>
 
-          <div className="p-3 bg-secondary">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-bold text-sm truncate pr-2" title={icon.name}>{icon.name}</h3>
-              <button
-                onClick={handleLike}
-                className="flex items-center gap-1 hover:text-accent transition-colors"
-                data-testid={`btn-like-${icon.id}`}
-              >
-                <Heart className="w-4 h-4" />
-                <span className="font-mono text-xs font-bold">{likes}</span>
-              </button>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="nb-badge bg-card text-[10px]">{icon.category}</span>
-              <span className="font-mono text-[10px] font-bold opacity-60 flex items-center gap-1">
-                <Download className="w-3 h-3" /> {icon.downloads}
-              </span>
-            </div>
+          <div className="px-3 py-2 bg-secondary flex items-center justify-between">
+            <button
+              onClick={handleLike}
+              className="flex items-center gap-1 hover:text-accent transition-colors"
+              data-testid={`btn-like-${icon.id}`}
+            >
+              <Heart className="w-3.5 h-3.5" />
+              <span className="font-mono text-xs font-bold">{likes}</span>
+            </button>
+            <span className="font-mono text-[10px] font-bold opacity-60 flex items-center gap-1">
+              <Download className="w-3 h-3" /> {icon.downloads}
+            </span>
           </div>
         </div>
       </Link>
