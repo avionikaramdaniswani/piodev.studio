@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useCreateIcon } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, Eye, FileCode, X, CheckCircle2, XCircle, Loader2, Files } from "lucide-react";
+import { Upload, FileCode, X, CheckCircle2, XCircle, Loader2, Files } from "lucide-react";
 
 const CATEGORIES = ["UI", "Navigation", "Social", "Media", "Files", "Communication", "Weather", "Finance", "Security", "Misc"];
 const STYLES = ["outline", "filled", "duotone"] as const;
@@ -9,7 +9,6 @@ const STYLES = ["outline", "filled", "duotone"] as const;
 interface SvgFile {
   id: string;
   fileName: string;
-  slug: string;
   svgContent: string;
   status: "pending" | "uploading" | "success" | "error";
   errorMsg?: string;
@@ -23,8 +22,8 @@ function toSlug(name: string) {
   return name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
 }
 
-function slugFromFile(fileName: string) {
-  return toSlug(fileName.replace(/\.svg$/i, ""));
+function computeSlug(baseSlug: string, index: number) {
+  return index === 0 ? baseSlug : `${baseSlug}-${index + 1}`;
 }
 
 export function UploadIconForm({ onSuccess }: UploadIconFormProps) {
@@ -33,9 +32,7 @@ export function UploadIconForm({ onSuccess }: UploadIconFormProps) {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [svgFiles, setSvgFiles] = useState<SvgFile[]>([]);
-  const [previewId, setPreviewId] = useState<string | null>(null);
 
-  // Shared metadata (berlaku semua file)
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
@@ -46,13 +43,9 @@ export function UploadIconForm({ onSuccess }: UploadIconFormProps) {
 
   const [isUploading, setIsUploading] = useState(false);
 
-  const isMulti = svgFiles.length > 1;
-
   const handleNameChange = (val: string) => {
     setName(val);
-    if (!isMulti) {
-      setSlug(toSlug(val));
-    }
+    setSlug(toSlug(val));
   };
 
   const handleFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -67,7 +60,6 @@ export function UploadIconForm({ onSuccess }: UploadIconFormProps) {
             resolve({
               id: `${file.name}-${Date.now()}-${Math.random()}`,
               fileName: file.name,
-              slug: slugFromFile(file.name),
               svgContent: ev.target?.result as string,
               status: "pending",
             });
@@ -77,26 +69,14 @@ export function UploadIconForm({ onSuccess }: UploadIconFormProps) {
     );
 
     Promise.all(readers).then((newFiles) => {
-      setSvgFiles((prev) => {
-        const next = [...prev, ...newFiles];
-        // When only 1 file total, sync slug from name
-        if (next.length === 1 && name) {
-          setSlug(toSlug(name));
-        }
-        return next;
-      });
-      if (!previewId && newFiles.length > 0) setPreviewId(newFiles[0].id);
+      setSvgFiles((prev) => [...prev, ...newFiles]);
     });
 
     e.target.value = "";
   };
 
   const removeFile = (id: string) => {
-    setSvgFiles((prev) => {
-      const next = prev.filter((f) => f.id !== id);
-      if (previewId === id) setPreviewId(next[0]?.id ?? null);
-      return next;
-    });
+    setSvgFiles((prev) => prev.filter((f) => f.id !== id));
   };
 
   const updateFile = (id: string, patch: Partial<SvgFile>) => {
@@ -119,11 +99,12 @@ export function UploadIconForm({ onSuccess }: UploadIconFormProps) {
     let successCount = 0;
     let lastSlug = "";
 
-    for (const file of svgFiles) {
-      if (file.status === "success") continue;
+    // Only upload pending files; track their index for slug numbering
+    const pendingFiles = svgFiles.filter((f) => f.status !== "success");
 
-      // For single file use the shared slug; for multi use per-file slug from filename
-      const fileSlug = isMulti ? file.slug : slug;
+    for (let i = 0; i < pendingFiles.length; i++) {
+      const file = pendingFiles[i];
+      const fileSlug = computeSlug(slug || toSlug(name), i);
 
       updateFile(file.id, { status: "uploading" });
       try {
@@ -161,15 +142,15 @@ export function UploadIconForm({ onSuccess }: UploadIconFormProps) {
     }
   };
 
-  const previewFile = svgFiles.find((f) => f.id === previewId);
-  const pendingCount = svgFiles.filter((f) => f.status !== "success").length;
+  const pendingFiles = svgFiles.filter((f) => f.status !== "success");
+  const pendingCount = pendingFiles.length;
+  const baseSlug = slug || toSlug(name);
 
   return (
     <form onSubmit={handleSubmit}>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* LEFT: File list + preview */}
+        {/* LEFT: File previews */}
         <div className="flex flex-col gap-4">
-          {/* Upload button */}
           <div className="nb-card p-5">
             <label className="block font-black text-sm mb-3 flex items-center gap-2">
               <Files className="w-4 h-4" /> FILE SVG *
@@ -193,82 +174,66 @@ export function UploadIconForm({ onSuccess }: UploadIconFormProps) {
             />
           </div>
 
-          {/* File list */}
           {svgFiles.length > 0 && (
-            <div className="nb-card p-4 flex flex-col gap-2">
-              <div className="font-black text-xs mb-1 opacity-60">{svgFiles.length} FILE DIPILIH</div>
-              <div className="flex flex-col gap-2 max-h-52 overflow-y-auto pr-1">
-                {svgFiles.map((f) => (
-                  <div
-                    key={f.id}
-                    onClick={() => setPreviewId(f.id)}
-                    className={`flex items-center gap-2 p-2 rounded cursor-pointer border-2 transition-colors ${
-                      previewId === f.id ? "border-foreground bg-[#FFE034]" : "border-transparent hover:border-foreground/30"
-                    }`}
-                  >
-                    <div className="flex-shrink-0 w-5">
-                      {f.status === "uploading" && <Loader2 className="w-4 h-4 animate-spin" />}
-                      {f.status === "success" && <CheckCircle2 className="w-4 h-4 text-green-600" />}
-                      {f.status === "error" && <XCircle className="w-4 h-4 text-red-500" />}
-                      {f.status === "pending" && <FileCode className="w-4 h-4 opacity-40" />}
-                    </div>
+            <div className="nb-card p-4">
+              <div className="font-black text-xs mb-3 opacity-60">{svgFiles.length} FILE DIPILIH</div>
+              <div className="grid grid-cols-3 gap-3">
+                {svgFiles.map((f, i) => {
+                  const isPending = f.status !== "success";
+                  const pendingIndex = pendingFiles.findIndex((p) => p.id === f.id);
+                  const displaySlug = f.status === "success"
+                    ? "—"
+                    : isPending && baseSlug
+                    ? computeSlug(baseSlug, pendingIndex)
+                    : "";
 
-                    <div className="flex-1 min-w-0">
-                      <div className="font-bold text-xs truncate">{f.fileName}</div>
-                      {isMulti && (
-                        <div className="font-mono text-[10px] opacity-40 truncate">slug: {f.slug}</div>
+                  return (
+                    <div
+                      key={f.id}
+                      className="flex flex-col items-center gap-1 p-3 rounded border-2 border-foreground/10 relative"
+                      style={{ background: "#F5F0E8" }}
+                    >
+                      {/* Status badge */}
+                      <div className="absolute top-1.5 right-1.5">
+                        {f.status === "uploading" && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                        {f.status === "success" && <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />}
+                        {f.status === "error" && <XCircle className="w-3.5 h-3.5 text-red-500" />}
+                        {f.status === "pending" && (
+                          <button
+                            type="button"
+                            onClick={() => removeFile(f.id)}
+                            className="opacity-30 hover:opacity-100"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+
+                      {/* SVG preview */}
+                      <div
+                        style={{ width: 48, height: 48, color: "#0A0A0A" }}
+                        dangerouslySetInnerHTML={{ __html: f.svgContent }}
+                      />
+
+                      {/* Filename */}
+                      <div className="font-mono text-[9px] opacity-40 text-center leading-tight truncate w-full text-center">
+                        {f.fileName.replace(/\.svg$/i, "")}
+                      </div>
+
+                      {/* Slug preview */}
+                      {displaySlug && (
+                        <div className="font-mono text-[9px] font-bold text-center truncate w-full" style={{ color: "#0A0A0A" }}>
+                          {displaySlug}
+                        </div>
                       )}
+
+                      {/* Error message */}
                       {f.status === "error" && (
-                        <div className="text-[10px] text-red-500 truncate">{f.errorMsg}</div>
+                        <div className="text-[9px] text-red-500 text-center leading-tight">{f.errorMsg}</div>
                       )}
                     </div>
-
-                    {f.status !== "uploading" && f.status !== "success" && (
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); removeFile(f.id); }}
-                        className="flex-shrink-0 opacity-40 hover:opacity-100"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Preview panel */}
-          {previewFile && (
-            <div className="nb-card p-5 flex flex-col gap-4">
-              <div className="font-black text-xs opacity-50 border-b-2 border-foreground/20 pb-2 flex items-center gap-2">
-                <Eye className="w-3.5 h-3.5" /> PREVIEW — {previewFile.fileName}
-              </div>
-
-              {/* Per-file slug (only shown for multi) */}
-              {isMulti && (
-                <div>
-                  <label className="block font-black text-sm mb-2">
-                    SLUG FILE INI
-                    <span className="font-mono text-xs font-normal opacity-50 ml-2">(auto dari nama file)</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={previewFile.slug}
-                    onChange={(e) => updateFile(previewFile.id, { slug: e.target.value })}
-                    className="nb-input w-full"
-                    style={{ fontFamily: "'JetBrains Mono', monospace" }}
-                    disabled={previewFile.status === "uploading" || previewFile.status === "success"}
-                  />
-                </div>
-              )}
-
-              <div className="flex flex-col items-center justify-center gap-2" style={{ background: "#F5F0E8", borderRadius: 4, padding: "16px 0" }}>
-                <div className="font-black text-xs opacity-40">SVG PREVIEW</div>
-                <div
-                  style={{ width: 80, height: 80, color: "#0A0A0A" }}
-                  dangerouslySetInnerHTML={{ __html: previewFile.svgContent }}
-                />
+                  );
+                })}
               </div>
             </div>
           )}
@@ -287,26 +252,31 @@ export function UploadIconForm({ onSuccess }: UploadIconFormProps) {
               value={name}
               onChange={(e) => handleNameChange(e.target.value)}
               className="nb-input w-full"
-              placeholder="Arrow Right"
+              placeholder="Time"
               required
               data-testid="input-icon-name"
             />
           </div>
 
-          {/* Slug hanya tampil kalau 1 file */}
-          {!isMulti && (
-            <div>
-              <label className="block font-black text-sm mb-2">SLUG</label>
-              <input
-                type="text"
-                value={slug}
-                onChange={(e) => setSlug(e.target.value)}
-                className="nb-input w-full"
-                style={{ fontFamily: "'JetBrains Mono', monospace" }}
-                data-testid="input-icon-slug"
-              />
-            </div>
-          )}
+          <div>
+            <label className="block font-black text-sm mb-2">
+              SLUG
+              {svgFiles.length > 1 && baseSlug && (
+                <span className="font-mono text-[10px] font-normal opacity-50 ml-2">
+                  → {baseSlug}, {baseSlug}-2, {baseSlug}-3…
+                </span>
+              )}
+            </label>
+            <input
+              type="text"
+              value={slug}
+              onChange={(e) => setSlug(e.target.value)}
+              className="nb-input w-full"
+              style={{ fontFamily: "'JetBrains Mono', monospace" }}
+              placeholder={toSlug(name) || "time"}
+              data-testid="input-icon-slug"
+            />
+          </div>
 
           <div>
             <label className="block font-black text-sm mb-2">DESKRIPSI</label>
@@ -353,10 +323,10 @@ export function UploadIconForm({ onSuccess }: UploadIconFormProps) {
             data-testid="button-submit-upload"
           >
             {isUploading
-              ? `MENGUPLOAD... (${svgFiles.filter((f) => f.status === "uploading").length > 0
-                  ? svgFiles.findIndex((f) => f.status === "uploading") + 1
-                  : svgFiles.filter((f) => f.status === "success").length}/${svgFiles.length})`
-              : svgFiles.length > 1
+              ? `MENGUPLOAD... (${
+                  svgFiles.filter((f) => f.status === "success").length + 1
+                }/${svgFiles.length})`
+              : pendingCount > 1
               ? `UPLOAD ${pendingCount} IKON`
               : "UPLOAD IKON"}
           </button>
