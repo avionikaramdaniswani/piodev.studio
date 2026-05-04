@@ -17,7 +17,6 @@ import JsonFormatter from "@/pages/tools/json-formatter";
 import CssShadowGenerator from "@/pages/tools/css-shadow-generator";
 import FaviconGenerator from "@/pages/tools/favicon-generator";
 import GradientGenerator from "@/pages/tools/gradient-generator";
-import UploadIcon from "@/pages/upload";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
 import AdminPage from "@/pages/admin";
@@ -67,7 +66,6 @@ function Router() {
         <Route path="/tools/css-shadow-generator" component={CssShadowGenerator} />
         <Route path="/tools/favicon-generator" component={FaviconGenerator} />
         <Route path="/tools/gradient-generator" component={GradientGenerator} />
-        <Route path="/upload" component={UploadIcon} />
         <Route path="/login" component={Login} />
         <Route path="/register" component={Register} />
         <Route path="/profil" component={ProfilPage} />
