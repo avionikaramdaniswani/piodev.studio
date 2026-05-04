@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   Users, Eye, X, Mail, Shield, Calendar,
-  Key, Sparkles, Download, User, Clock,
+  Key, Sparkles, Download, User, Clock, Trash2,
 } from "lucide-react";
 import { RoleGuard } from "@/components/shared/RoleGuard";
 import { AdminLayout } from "@/components/layout/AdminLayout";
@@ -45,14 +45,24 @@ function UserDrawer({
   onClose,
   onRoleChange,
   onTierChange,
+  onDelete,
 }: {
   user: UserRow;
   onClose: () => void;
   onRoleChange: (id: string, role: string) => void;
   onTierChange: (id: string, tier: UserTier) => void;
+  onDelete: (id: string) => Promise<void>;
 }) {
   const isPlus = user.tier === "plus";
   const plusExpired = user.plus_expires_at && new Date() > new Date(user.plus_expires_at);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    await onDelete(user.id);
+    setDeleting(false);
+  };
 
   return (
     <>
@@ -186,6 +196,48 @@ function UserDrawer({
               <span>Perubahan peran dan tier langsung tersimpan ke database saat dipilih.</span>
             </div>
           </div>
+
+          <div className="mt-4 flex flex-col gap-3 border-t-[3px] border-foreground pt-4" style={{ borderColor: "#FF6B35" }}>
+            <p className="font-black text-xs flex items-center gap-1.5" style={{ color: "#FF6B35" }}>
+              <Trash2 className="w-3.5 h-3.5" /> ZONA BAHAYA
+            </p>
+
+            {!confirmDelete ? (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="nb-btn py-2.5 px-4 font-black text-sm flex items-center justify-center gap-2 w-full"
+                style={{ background: "white", borderColor: "#FF6B35", color: "#FF6B35" }}
+              >
+                <Trash2 className="w-4 h-4" /> HAPUS PENGGUNA
+              </button>
+            ) : (
+              <div className="flex flex-col gap-2 border-[3px] border-foreground p-3" style={{ borderColor: "#FF6B35", background: "#FFF3EF" }}>
+                <p className="font-black text-xs" style={{ color: "#FF6B35" }}>
+                  Yakin hapus <span className="font-mono">{user.email}</span>?
+                </p>
+                <p className="font-mono text-[10px] opacity-60">Profil pengguna akan dihapus permanen dari database.</p>
+                <div className="flex gap-2 mt-1">
+                  <button
+                    onClick={() => setConfirmDelete(false)}
+                    disabled={deleting}
+                    className="flex-1 nb-btn py-2 font-black text-xs"
+                    style={{ background: "white" }}
+                  >
+                    BATAL
+                  </button>
+                  <button
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="flex-1 nb-btn py-2 font-black text-xs flex items-center justify-center gap-1 disabled:opacity-50"
+                    style={{ background: "#FF6B35", color: "white" }}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    {deleting ? "MENGHAPUS..." : "YA, HAPUS"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </>
@@ -225,6 +277,18 @@ function AdminUsers() {
     await supabase.from("profiles").update({ tier: newTier }).eq("id", userId);
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, tier: newTier } : u));
     setSelectedUser(prev => prev?.id === userId ? { ...prev, tier: newTier } : prev);
+  };
+
+  const handleDelete = async (userId: string) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch(`/api/admin/users/${userId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${session?.access_token ?? ""}` },
+    });
+    if (res.ok) {
+      setUsers(prev => prev.filter(u => u.id !== userId));
+      setSelectedUser(null);
+    }
   };
 
   const filtered = users.filter(u =>
@@ -360,6 +424,7 @@ function AdminUsers() {
           onClose={() => setSelectedUser(null)}
           onRoleChange={changeRole}
           onTierChange={changeTier}
+          onDelete={handleDelete}
         />
       )}
     </AdminLayout>
