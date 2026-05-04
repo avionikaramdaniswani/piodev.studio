@@ -127,6 +127,48 @@ paths:
                 items:
                   $ref: "#/components/schemas/CategoryCount"
 
+  /icons/{id}:
+    put:
+      operationId: updateIcon
+      tags: [icons]
+      summary: Update an icon by id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateIconBody"
+      responses:
+        "200":
+          description: Updated icon
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Icon"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteIcon
+      tags: [icons]
+      summary: Delete an icon by id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
   /icons/{slug}:
     get:
       operationId: getIconBySlug
@@ -325,6 +367,32 @@ components:
         - svgContent
         - category
         - style
+
+    UpdateIconBody:
+      type: object
+      properties:
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+          nullable: true
+        svgContent:
+          type: string
+        category:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        style:
+          type: string
+          enum: [outline, filled, duotone]
+        license:
+          type: string
+        isFeatured:
+          type: boolean
 
     IconStats:
       type: object

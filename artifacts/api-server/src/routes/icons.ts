@@ -6,6 +6,7 @@ import { eq, ilike, and, sql, or, ne } from "drizzle-orm";
 import {
   ListIconsQueryParams,
   CreateIconBody,
+  UpdateIconBody,
   GetIconBySlugParams,
   DownloadIconParams,
   ToggleLikeParams,
@@ -222,6 +223,55 @@ router.get("/similar/:id", async (req, res) => {
     .limit(8);
 
   return res.json(similar.map((i) => ({ ...i, tags: i.tags ?? [] })));
+});
+
+// PUT /icons/:id — requires staff or admin
+router.put("/:id", requireAuth, requireRole("staff"), async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: "Invalid id" });
+
+  const parsed = UpdateIconBody.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.message });
+
+  const updates = parsed.data;
+  const setValues: Record<string, unknown> = {};
+
+  if (updates.name !== undefined) setValues.name = updates.name;
+  if (updates.slug !== undefined) setValues.slug = updates.slug;
+  if (updates.description !== undefined) setValues.description = updates.description;
+  if (updates.svgContent !== undefined) setValues.svgContent = sanitizeSvg(updates.svgContent);
+  if (updates.category !== undefined) setValues.category = updates.category;
+  if (updates.tags !== undefined) setValues.tags = updates.tags;
+  if (updates.style !== undefined) setValues.style = updates.style;
+  if (updates.license !== undefined) setValues.license = updates.license;
+  if (updates.isFeatured !== undefined) setValues.isFeatured = updates.isFeatured;
+
+  if (Object.keys(setValues).length === 0) {
+    return res.status(400).json({ error: "No fields to update" });
+  }
+
+  const [icon] = await db
+    .update(iconsTable)
+    .set(setValues)
+    .where(eq(iconsTable.id, id))
+    .returning();
+
+  if (!icon) return res.status(404).json({ error: "Icon not found" });
+  return res.json({ ...icon, tags: icon.tags ?? [] });
+});
+
+// DELETE /icons/:id — requires staff or admin
+router.delete("/:id", requireAuth, requireRole("staff"), async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: "Invalid id" });
+
+  const [icon] = await db
+    .delete(iconsTable)
+    .where(eq(iconsTable.id, id))
+    .returning({ id: iconsTable.id });
+
+  if (!icon) return res.status(404).json({ error: "Icon not found" });
+  return res.status(204).send();
 });
 
 // GET /icons/:slug

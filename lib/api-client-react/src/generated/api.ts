@@ -26,6 +26,7 @@ import type {
   IconStats,
   ListIconsParams,
   ToggleLike200,
+  UpdateIconBody,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
@@ -516,6 +517,177 @@ export function useListCategories<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Update an icon by id
+ */
+export const getUpdateIconUrl = (id: number) => {
+  return `/api/icons/${id}`;
+};
+
+export const updateIcon = async (
+  id: number,
+  updateIconBody: UpdateIconBody,
+  options?: RequestInit,
+): Promise<Icon> => {
+  return customFetch<Icon>(getUpdateIconUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateIconBody),
+  });
+};
+
+export const getUpdateIconMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateIcon>>,
+    TError,
+    { id: number; data: BodyType<UpdateIconBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateIcon>>,
+  TError,
+  { id: number; data: BodyType<UpdateIconBody> },
+  TContext
+> => {
+  const mutationKey = ["updateIcon"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateIcon>>,
+    { id: number; data: BodyType<UpdateIconBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateIcon(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateIconMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateIcon>>
+>;
+export type UpdateIconMutationBody = BodyType<UpdateIconBody>;
+export type UpdateIconMutationError = ErrorType<void>;
+
+/**
+ * @summary Update an icon by id
+ */
+export const useUpdateIcon = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateIcon>>,
+    TError,
+    { id: number; data: BodyType<UpdateIconBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateIcon>>,
+  TError,
+  { id: number; data: BodyType<UpdateIconBody> },
+  TContext
+> => {
+  return useMutation(getUpdateIconMutationOptions(options));
+};
+
+/**
+ * @summary Delete an icon by id
+ */
+export const getDeleteIconUrl = (id: number) => {
+  return `/api/icons/${id}`;
+};
+
+export const deleteIcon = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteIconUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteIconMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteIcon>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteIcon>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteIcon"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteIcon>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteIcon(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteIconMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteIcon>>
+>;
+
+export type DeleteIconMutationError = ErrorType<void>;
+
+/**
+ * @summary Delete an icon by id
+ */
+export const useDeleteIcon = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteIcon>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteIcon>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteIconMutationOptions(options));
+};
 
 /**
  * @summary Get a single icon by slug

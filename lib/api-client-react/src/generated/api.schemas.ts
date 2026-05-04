@@ -61,6 +61,27 @@ export interface CreateIconBody {
   license?: string;
 }
 
+export type UpdateIconBodyStyle =
+  (typeof UpdateIconBodyStyle)[keyof typeof UpdateIconBodyStyle];
+
+export const UpdateIconBodyStyle = {
+  outline: "outline",
+  filled: "filled",
+  duotone: "duotone",
+} as const;
+
+export interface UpdateIconBody {
+  name?: string;
+  slug?: string;
+  description?: string | null;
+  svgContent?: string;
+  category?: string;
+  tags?: string[];
+  style?: UpdateIconBodyStyle;
+  license?: string;
+  isFeatured?: boolean;
+}
+
 export interface IconStats {
   totalIcons: number;
   totalDownloads: number;

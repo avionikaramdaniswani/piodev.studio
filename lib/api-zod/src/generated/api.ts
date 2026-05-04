@@ -107,6 +107,48 @@ export const ListCategoriesResponseItem = zod.object({
 export const ListCategoriesResponse = zod.array(ListCategoriesResponseItem);
 
 /**
+ * @summary Update an icon by id
+ */
+export const UpdateIconParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateIconBody = zod.object({
+  name: zod.string().optional(),
+  slug: zod.string().optional(),
+  description: zod.string().nullish(),
+  svgContent: zod.string().optional(),
+  category: zod.string().optional(),
+  tags: zod.array(zod.string()).optional(),
+  style: zod.enum(["outline", "filled", "duotone"]).optional(),
+  license: zod.string().optional(),
+  isFeatured: zod.boolean().optional(),
+});
+
+export const UpdateIconResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  slug: zod.string(),
+  description: zod.string().nullish(),
+  svgContent: zod.string(),
+  category: zod.string(),
+  tags: zod.array(zod.string()),
+  style: zod.enum(["outline", "filled", "duotone"]),
+  downloads: zod.number(),
+  likes: zod.number(),
+  isFeatured: zod.boolean(),
+  license: zod.string(),
+  createdAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Delete an icon by id
+ */
+export const DeleteIconParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
  * @summary Get a single icon by slug
  */
 export const GetIconBySlugParams = zod.object({
