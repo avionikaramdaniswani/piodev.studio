@@ -22,6 +22,15 @@ function toSlug(name: string) {
   return name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
 }
 
+function normalizeSvgForPreview(svg: string): string {
+  return svg.replace(/<svg([^>]*)>/i, (_match, attrs: string) => {
+    const cleaned = attrs
+      .replace(/\bwidth\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "")
+      .replace(/\bheight\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "");
+    return `<svg${cleaned} width="100%" height="100%">`;
+  });
+}
+
 function computeSlug(baseSlug: string, index: number) {
   return index === 0 ? baseSlug : `${baseSlug}-${index + 1}`;
 }
@@ -211,8 +220,8 @@ export function UploadIconForm({ onSuccess }: UploadIconFormProps) {
 
                       {/* SVG preview */}
                       <div
-                        style={{ width: 48, height: 48, color: "#0A0A0A" }}
-                        dangerouslySetInnerHTML={{ __html: f.svgContent }}
+                        style={{ width: 48, height: 48, color: "#0A0A0A", overflow: "hidden", flexShrink: 0 }}
+                        dangerouslySetInnerHTML={{ __html: normalizeSvgForPreview(f.svgContent) }}
                       />
 
                       {/* Filename */}
