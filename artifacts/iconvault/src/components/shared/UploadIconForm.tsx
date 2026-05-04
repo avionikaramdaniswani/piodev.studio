@@ -201,20 +201,6 @@ export function UploadIconForm({ onSuccess }: UploadIconFormProps) {
                       )}
                     </div>
 
-                    {/* Editable name */}
-                    <input
-                      type="text"
-                      value={f.name}
-                      onClick={(e) => e.stopPropagation()}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        updateFile(f.id, { name: val, slug: toSlug(val) });
-                      }}
-                      className="nb-input text-xs py-1 px-2 w-28 flex-shrink-0"
-                      placeholder="Nama ikon"
-                      disabled={f.status === "uploading" || f.status === "success"}
-                    />
-
                     {/* Remove */}
                     {f.status !== "uploading" && f.status !== "success" && (
                       <button
@@ -231,16 +217,48 @@ export function UploadIconForm({ onSuccess }: UploadIconFormProps) {
             </div>
           )}
 
-          {/* SVG Preview */}
+          {/* Selected file: Name, Slug & Preview */}
           {previewFile && (
-            <div className="nb-card p-5 flex flex-col items-center justify-center gap-3" style={{ background: "#F5F0E8", minHeight: 140 }}>
-              <div className="flex items-center gap-2 font-black text-xs opacity-50">
-                <Eye className="w-3.5 h-3.5" /> PREVIEW — {previewFile.name}
+            <div className="nb-card p-5 flex flex-col gap-4">
+              <div className="font-black text-xs opacity-50 border-b-2 border-foreground/20 pb-2 flex items-center gap-2">
+                <Eye className="w-3.5 h-3.5" /> DETAIL IKON DIPILIH
               </div>
-              <div
-                style={{ width: 96, height: 96, color: "#0A0A0A" }}
-                dangerouslySetInnerHTML={{ __html: previewFile.svgContent }}
-              />
+
+              <div>
+                <label className="block font-black text-sm mb-2">NAMA *</label>
+                <input
+                  type="text"
+                  value={previewFile.name}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    updateFile(previewFile.id, { name: val, slug: toSlug(val) });
+                  }}
+                  className="nb-input w-full"
+                  placeholder="Arrow Right"
+                  disabled={previewFile.status === "uploading" || previewFile.status === "success"}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block font-black text-sm mb-2">SLUG</label>
+                <input
+                  type="text"
+                  value={previewFile.slug}
+                  onChange={(e) => updateFile(previewFile.id, { slug: e.target.value })}
+                  className="nb-input w-full"
+                  style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                  disabled={previewFile.status === "uploading" || previewFile.status === "success"}
+                />
+              </div>
+
+              <div className="flex flex-col items-center justify-center gap-2 pt-1" style={{ background: "#F5F0E8", borderRadius: 4, padding: "12px 0" }}>
+                <div className="font-black text-xs opacity-40">PREVIEW</div>
+                <div
+                  style={{ width: 80, height: 80, color: "#0A0A0A" }}
+                  dangerouslySetInnerHTML={{ __html: previewFile.svgContent }}
+                />
+              </div>
             </div>
           )}
         </div>
