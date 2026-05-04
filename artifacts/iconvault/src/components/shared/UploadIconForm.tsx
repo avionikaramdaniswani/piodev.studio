@@ -9,7 +9,6 @@ const STYLES = ["outline", "filled", "duotone"] as const;
 interface SvgFile {
   id: string;
   fileName: string;
-  name: string;
   slug: string;
   svgContent: string;
   status: "pending" | "uploading" | "success" | "error";
@@ -24,8 +23,8 @@ function toSlug(name: string) {
   return name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
 }
 
-function nameFromFile(fileName: string) {
-  return fileName.replace(/\.svg$/i, "").replace(/[-_]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+function slugFromFile(fileName: string) {
+  return toSlug(fileName.replace(/\.svg$/i, ""));
 }
 
 export function UploadIconForm({ onSuccess }: UploadIconFormProps) {
@@ -36,6 +35,9 @@ export function UploadIconForm({ onSuccess }: UploadIconFormProps) {
   const [svgFiles, setSvgFiles] = useState<SvgFile[]>([]);
   const [previewId, setPreviewId] = useState<string | null>(null);
 
+  // Shared metadata (berlaku semua file)
+  const [name, setName] = useState("");
+  const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("UI");
   const [tags, setTags] = useState("");
@@ -43,6 +45,15 @@ export function UploadIconForm({ onSuccess }: UploadIconFormProps) {
   const [license, setLicense] = useState("MIT");
 
   const [isUploading, setIsUploading] = useState(false);
+
+  const isMulti = svgFiles.length > 1;
+
+  const handleNameChange = (val: string) => {
+    setName(val);
+    if (!isMulti) {
+      setSlug(toSlug(val));
+    }
+  };
 
   const handleFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
@@ -53,12 +64,10 @@ export function UploadIconForm({ onSuccess }: UploadIconFormProps) {
         new Promise<SvgFile>((resolve) => {
           const reader = new FileReader();
           reader.onload = (ev) => {
-            const name = nameFromFile(file.name);
             resolve({
               id: `${file.name}-${Date.now()}-${Math.random()}`,
               fileName: file.name,
-              name,
-              slug: toSlug(name),
+              slug: slugFromFile(file.name),
               svgContent: ev.target?.result as string,
               status: "pending",
             });
@@ -68,7 +77,14 @@ export function UploadIconForm({ onSuccess }: UploadIconFormProps) {
     );
 
     Promise.all(readers).then((newFiles) => {
-      setSvgFiles((prev) => [...prev, ...newFiles]);
+      setSvgFiles((prev) => {
+        const next = [...prev, ...newFiles];
+        // When only 1 file total, sync slug from name
+        if (next.length === 1 && name) {
+          setSlug(toSlug(name));
+        }
+        return next;
+      });
       if (!previewId && newFiles.length > 0) setPreviewId(newFiles[0].id);
     });
 
@@ -93,6 +109,10 @@ export function UploadIconForm({ onSuccess }: UploadIconFormProps) {
       toast({ title: "Belum ada file", description: "Pilih minimal satu file SVG.", variant: "destructive" });
       return;
     }
+    if (!name.trim()) {
+      toast({ title: "Nama wajib diisi", variant: "destructive" });
+      return;
+    }
 
     setIsUploading(true);
     const parsedTags = tags.split(",").map((t) => t.trim()).filter(Boolean);
@@ -102,12 +122,15 @@ export function UploadIconForm({ onSuccess }: UploadIconFormProps) {
     for (const file of svgFiles) {
       if (file.status === "success") continue;
 
+      // For single file use the shared slug; for multi use per-file slug from filename
+      const fileSlug = isMulti ? file.slug : slug;
+
       updateFile(file.id, { status: "uploading" });
       try {
         const icon = await createIcon.mutateAsync({
           data: {
-            name: file.name,
-            slug: file.slug,
+            name,
+            slug: fileSlug,
             description: description || undefined,
             svgContent: file.svgContent,
             category,
@@ -146,13 +169,12 @@ export function UploadIconForm({ onSuccess }: UploadIconFormProps) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* LEFT: File list + preview */}
         <div className="flex flex-col gap-4">
-          {/* Drop zone / upload button */}
+          {/* Upload button */}
           <div className="nb-card p-5">
             <label className="block font-black text-sm mb-3 flex items-center gap-2">
               <Files className="w-4 h-4" /> FILE SVG *
               <span className="font-mono text-xs font-normal opacity-50">(bisa pilih banyak)</span>
             </label>
-
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
@@ -184,7 +206,6 @@ export function UploadIconForm({ onSuccess }: UploadIconFormProps) {
                       previewId === f.id ? "border-foreground bg-[#FFE034]" : "border-transparent hover:border-foreground/30"
                     }`}
                   >
-                    {/* Status icon */}
                     <div className="flex-shrink-0 w-5">
                       {f.status === "uploading" && <Loader2 className="w-4 h-4 animate-spin" />}
                       {f.status === "success" && <CheckCircle2 className="w-4 h-4 text-green-600" />}
@@ -192,16 +213,16 @@ export function UploadIconForm({ onSuccess }: UploadIconFormProps) {
                       {f.status === "pending" && <FileCode className="w-4 h-4 opacity-40" />}
                     </div>
 
-                    {/* Name + filename */}
                     <div className="flex-1 min-w-0">
-                      <div className="font-bold text-xs truncate">{f.name}</div>
-                      <div className="font-mono text-[10px] opacity-40 truncate">{f.fileName}</div>
+                      <div className="font-bold text-xs truncate">{f.fileName}</div>
+                      {isMulti && (
+                        <div className="font-mono text-[10px] opacity-40 truncate">slug: {f.slug}</div>
+                      )}
                       {f.status === "error" && (
                         <div className="text-[10px] text-red-500 truncate">{f.errorMsg}</div>
                       )}
                     </div>
 
-                    {/* Remove */}
                     {f.status !== "uploading" && f.status !== "success" && (
                       <button
                         type="button"
@@ -217,43 +238,33 @@ export function UploadIconForm({ onSuccess }: UploadIconFormProps) {
             </div>
           )}
 
-          {/* Selected file: Name, Slug & Preview */}
+          {/* Preview panel */}
           {previewFile && (
             <div className="nb-card p-5 flex flex-col gap-4">
               <div className="font-black text-xs opacity-50 border-b-2 border-foreground/20 pb-2 flex items-center gap-2">
-                <Eye className="w-3.5 h-3.5" /> DETAIL IKON DIPILIH
+                <Eye className="w-3.5 h-3.5" /> PREVIEW — {previewFile.fileName}
               </div>
 
-              <div>
-                <label className="block font-black text-sm mb-2">NAMA *</label>
-                <input
-                  type="text"
-                  value={previewFile.name}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    updateFile(previewFile.id, { name: val, slug: toSlug(val) });
-                  }}
-                  className="nb-input w-full"
-                  placeholder="Arrow Right"
-                  disabled={previewFile.status === "uploading" || previewFile.status === "success"}
-                  required
-                />
-              </div>
+              {/* Per-file slug (only shown for multi) */}
+              {isMulti && (
+                <div>
+                  <label className="block font-black text-sm mb-2">
+                    SLUG FILE INI
+                    <span className="font-mono text-xs font-normal opacity-50 ml-2">(auto dari nama file)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={previewFile.slug}
+                    onChange={(e) => updateFile(previewFile.id, { slug: e.target.value })}
+                    className="nb-input w-full"
+                    style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                    disabled={previewFile.status === "uploading" || previewFile.status === "success"}
+                  />
+                </div>
+              )}
 
-              <div>
-                <label className="block font-black text-sm mb-2">SLUG</label>
-                <input
-                  type="text"
-                  value={previewFile.slug}
-                  onChange={(e) => updateFile(previewFile.id, { slug: e.target.value })}
-                  className="nb-input w-full"
-                  style={{ fontFamily: "'JetBrains Mono', monospace" }}
-                  disabled={previewFile.status === "uploading" || previewFile.status === "success"}
-                />
-              </div>
-
-              <div className="flex flex-col items-center justify-center gap-2 pt-1" style={{ background: "#F5F0E8", borderRadius: 4, padding: "12px 0" }}>
-                <div className="font-black text-xs opacity-40">PREVIEW</div>
+              <div className="flex flex-col items-center justify-center gap-2" style={{ background: "#F5F0E8", borderRadius: 4, padding: "16px 0" }}>
+                <div className="font-black text-xs opacity-40">SVG PREVIEW</div>
                 <div
                   style={{ width: 80, height: 80, color: "#0A0A0A" }}
                   dangerouslySetInnerHTML={{ __html: previewFile.svgContent }}
@@ -270,15 +281,44 @@ export function UploadIconForm({ onSuccess }: UploadIconFormProps) {
           </div>
 
           <div>
+            <label className="block font-black text-sm mb-2">NAMA *</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => handleNameChange(e.target.value)}
+              className="nb-input w-full"
+              placeholder="Arrow Right"
+              required
+              data-testid="input-icon-name"
+            />
+          </div>
+
+          {/* Slug hanya tampil kalau 1 file */}
+          {!isMulti && (
+            <div>
+              <label className="block font-black text-sm mb-2">SLUG</label>
+              <input
+                type="text"
+                value={slug}
+                onChange={(e) => setSlug(e.target.value)}
+                className="nb-input w-full"
+                style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                data-testid="input-icon-slug"
+              />
+            </div>
+          )}
+
+          <div>
             <label className="block font-black text-sm mb-2">DESKRIPSI</label>
             <input
               type="text" value={description} onChange={(e) => setDescription(e.target.value)}
               className="nb-input w-full" placeholder="Deskripsi singkat ikon"
+              data-testid="input-icon-description"
             />
           </div>
           <div>
             <label className="block font-black text-sm mb-2">KATEGORI</label>
-            <select value={category} onChange={(e) => setCategory(e.target.value)} className="nb-input w-full">
+            <select value={category} onChange={(e) => setCategory(e.target.value)} className="nb-input w-full" data-testid="select-category">
               {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
@@ -287,17 +327,18 @@ export function UploadIconForm({ onSuccess }: UploadIconFormProps) {
             <input
               type="text" value={tags} onChange={(e) => setTags(e.target.value)}
               className="nb-input w-full" placeholder="arrow, right, navigation"
+              data-testid="input-tags"
             />
           </div>
           <div>
             <label className="block font-black text-sm mb-2">STYLE</label>
-            <select value={style} onChange={(e) => setStyle(e.target.value as typeof style)} className="nb-input w-full">
+            <select value={style} onChange={(e) => setStyle(e.target.value as typeof style)} className="nb-input w-full" data-testid="select-style">
               {STYLES.map((s) => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
             </select>
           </div>
           <div>
             <label className="block font-black text-sm mb-2">LISENSI</label>
-            <select value={license} onChange={(e) => setLicense(e.target.value)} className="nb-input w-full">
+            <select value={license} onChange={(e) => setLicense(e.target.value)} className="nb-input w-full" data-testid="select-license">
               <option value="MIT">MIT</option>
               <option value="Apache-2.0">Apache 2.0</option>
               <option value="CC0">CC0 (Public Domain)</option>
@@ -309,6 +350,7 @@ export function UploadIconForm({ onSuccess }: UploadIconFormProps) {
             disabled={isUploading || svgFiles.length === 0}
             className="nb-btn w-full mt-2 text-lg font-black"
             style={{ background: "#FFE034", color: "#0A0A0A" }}
+            data-testid="button-submit-upload"
           >
             {isUploading
               ? `MENGUPLOAD... (${svgFiles.filter((f) => f.status === "uploading").length > 0
@@ -319,7 +361,6 @@ export function UploadIconForm({ onSuccess }: UploadIconFormProps) {
               : "UPLOAD IKON"}
           </button>
 
-          {/* Summary after upload */}
           {!isUploading && svgFiles.some((f) => f.status === "success" || f.status === "error") && (
             <div className="flex gap-3 text-xs font-mono">
               {svgFiles.filter((f) => f.status === "success").length > 0 && (
