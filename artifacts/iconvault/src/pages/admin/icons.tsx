@@ -16,6 +16,7 @@ import {
 } from "@workspace/api-client-react";
 import type { Icon } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
+import { normalizeSvg } from "@/lib/utils";
 
 const CATEGORIES = ["UI", "Navigation", "Social", "Media", "Files", "Communication", "Weather", "Finance", "Security", "Misc"];
 const STYLES = ["outline", "filled", "duotone"] as const;
@@ -110,9 +111,9 @@ function EditModal({ icon, onClose, onSaved }: { icon: Icon; onClose: () => void
         <div className="border-b-[4px] border-foreground p-4 flex items-center justify-between bg-foreground text-background flex-shrink-0">
           <div className="flex items-center gap-3">
             <div
-              className="w-8 h-8 border-[2px] border-background flex items-center justify-center [&>svg]:w-5 [&>svg]:h-5"
+              className="w-8 h-8 border-[2px] border-background flex items-center justify-center overflow-hidden p-0.5"
               style={{ background: "#FFE034" }}
-              dangerouslySetInnerHTML={{ __html: icon.svgContent }}
+              dangerouslySetInnerHTML={{ __html: normalizeSvg(icon.svgContent) }}
             />
             <span className="font-black text-sm">EDIT IKON — {icon.name}</span>
           </div>
@@ -224,8 +225,8 @@ function EditModal({ icon, onClose, onSaved }: { icon: Icon; onClose: () => void
                 <div className="border-[2px] border-foreground p-4 flex flex-col items-center gap-2" style={{ background: "#F5F0E8" }}>
                   <span className="font-black text-[10px] opacity-50 flex items-center gap-1"><Eye className="w-3 h-3" /> PREVIEW</span>
                   <div
-                    className="w-16 h-16 [&>svg]:w-full [&>svg]:h-full"
-                    dangerouslySetInnerHTML={{ __html: form.svgContent }}
+                    className="w-16 h-16 overflow-hidden"
+                    dangerouslySetInnerHTML={{ __html: normalizeSvg(form.svgContent) }}
                   />
                 </div>
               )}
@@ -293,10 +294,10 @@ function IconCard({
       <div className="h-1.5 flex-shrink-0" style={{ background: accentColor }} />
 
       {/* Preview */}
-      <div className="flex-1 flex items-center justify-center p-4 bg-card min-h-[72px] relative">
+      <div className="flex-1 flex items-center justify-center p-[18%] bg-card min-h-[72px] relative">
         <div
-          className="w-10 h-10 [&>svg]:w-full [&>svg]:h-full"
-          dangerouslySetInnerHTML={{ __html: icon.svgContent }}
+          className="w-full h-full overflow-hidden"
+          dangerouslySetInnerHTML={{ __html: normalizeSvg(icon.svgContent) }}
         />
         {icon.isFeatured && (
           <Star className="w-3 h-3 absolute top-1.5 right-1.5 opacity-40" />
