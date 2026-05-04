@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   Users, Eye, X, Mail, Shield, Calendar,
-  Key, Sparkles, Download, User, Clock, Trash2,
+  Key, Sparkles, Download, User, Clock, Trash2, CalendarClock, Check,
 } from "lucide-react";
 import { RoleGuard } from "@/components/shared/RoleGuard";
 import { AdminLayout } from "@/components/layout/AdminLayout";
@@ -45,23 +45,45 @@ function UserDrawer({
   onClose,
   onRoleChange,
   onTierChange,
+  onSetExpiry,
   onDelete,
 }: {
   user: UserRow;
   onClose: () => void;
   onRoleChange: (id: string, role: string) => void;
   onTierChange: (id: string, tier: UserTier) => void;
+  onSetExpiry: (id: string, expiresAt: string | null) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 }) {
   const isPlus = user.tier === "plus";
   const plusExpired = user.plus_expires_at && new Date() > new Date(user.plus_expires_at);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [expiryDate, setExpiryDate] = useState(
+    user.plus_expires_at ? user.plus_expires_at.split("T")[0] : ""
+  );
+  const [savingExpiry, setSavingExpiry] = useState(false);
+  const [expirySaved, setExpirySaved] = useState(false);
 
   const handleDelete = async () => {
     setDeleting(true);
     await onDelete(user.id);
     setDeleting(false);
+  };
+
+  const applyPreset = (days: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    setExpiryDate(d.toISOString().split("T")[0]);
+    setExpirySaved(false);
+  };
+
+  const handleSaveExpiry = async () => {
+    setSavingExpiry(true);
+    await onSetExpiry(user.id, expiryDate ? new Date(expiryDate).toISOString() : null);
+    setSavingExpiry(false);
+    setExpirySaved(true);
+    setTimeout(() => setExpirySaved(false), 2000);
   };
 
   return (
@@ -189,6 +211,59 @@ function UserDrawer({
               </select>
             </div>
 
+            {isPlus && (
+              <div className="flex flex-col gap-2 border-[2px] border-foreground p-3" style={{ background: "#FFFBF0" }}>
+                <label className="font-black text-xs flex items-center gap-1">
+                  <CalendarClock className="w-3.5 h-3.5 opacity-50" /> EXPIRY PLUS
+                </label>
+
+                <div className="flex gap-1.5 flex-wrap">
+                  {[
+                    { label: "+30 hr", days: 30 },
+                    { label: "+90 hr", days: 90 },
+                    { label: "+1 thn", days: 365 },
+                  ].map(p => (
+                    <button
+                      key={p.days}
+                      onClick={() => applyPreset(p.days)}
+                      className="nb-btn px-2 py-1 text-[10px] font-black"
+                      style={{ background: "#4DBBFF" }}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => { setExpiryDate(""); setExpirySaved(false); }}
+                    className="nb-btn px-2 py-1 text-[10px] font-black"
+                    style={{ background: "#e5e5e5" }}
+                  >
+                    ∞ Tanpa batas
+                  </button>
+                </div>
+
+                <input
+                  type="date"
+                  value={expiryDate}
+                  onChange={e => { setExpiryDate(e.target.value); setExpirySaved(false); }}
+                  className="nb-input px-2 py-1.5 text-xs font-mono w-full"
+                  min={new Date().toISOString().split("T")[0]}
+                />
+
+                <button
+                  onClick={handleSaveExpiry}
+                  disabled={savingExpiry}
+                  className="nb-btn py-1.5 font-black text-xs flex items-center justify-center gap-1 disabled:opacity-50 w-full"
+                  style={{ background: expirySaved ? "#00E676" : "#FFE034" }}
+                >
+                  {expirySaved ? <><Check className="w-3 h-3" /> TERSIMPAN</> : savingExpiry ? "MENYIMPAN..." : "SIMPAN EXPIRY"}
+                </button>
+
+                {!expiryDate && (
+                  <p className="font-mono text-[10px] opacity-50">Tanpa batas = Plus aktif selamanya.</p>
+                )}
+              </div>
+            )}
+
             <div
               className="border-[2px] border-foreground p-3 font-mono text-[10px] opacity-50 flex items-start gap-2"
             >
@@ -274,9 +349,21 @@ function AdminUsers() {
   };
 
   const changeTier = async (userId: string, newTier: UserTier) => {
-    await supabase.from("profiles").update({ tier: newTier }).eq("id", userId);
-    setUsers(prev => prev.map(u => u.id === userId ? { ...u, tier: newTier } : u));
-    setSelectedUser(prev => prev?.id === userId ? { ...prev, tier: newTier } : prev);
+    const updates: Record<string, unknown> = { tier: newTier };
+    if (newTier === "free") updates.plus_expires_at = null;
+    await supabase.from("profiles").update(updates).eq("id", userId);
+    setUsers(prev => prev.map(u => u.id === userId
+      ? { ...u, tier: newTier, plus_expires_at: newTier === "free" ? null : u.plus_expires_at }
+      : u));
+    setSelectedUser(prev => prev?.id === userId
+      ? { ...prev, tier: newTier, plus_expires_at: newTier === "free" ? null : prev.plus_expires_at }
+      : prev);
+  };
+
+  const handleSetExpiry = async (userId: string, expiresAt: string | null) => {
+    await supabase.from("profiles").update({ plus_expires_at: expiresAt }).eq("id", userId);
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, plus_expires_at: expiresAt } : u));
+    setSelectedUser(prev => prev?.id === userId ? { ...prev, plus_expires_at: expiresAt } : prev);
   };
 
   const handleDelete = async (userId: string) => {
@@ -424,6 +511,7 @@ function AdminUsers() {
           onClose={() => setSelectedUser(null)}
           onRoleChange={changeRole}
           onTierChange={changeTier}
+          onSetExpiry={handleSetExpiry}
           onDelete={handleDelete}
         />
       )}
