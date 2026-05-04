@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { IconCard } from "@/components/shared/IconCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
+import { normalizeSvg } from "@/lib/utils";
 
 const ACCENT_COLORS = ['#FFE034', '#FF6B9D', '#4DBBFF', '#00E676', '#FF6B35'];
 
@@ -398,8 +399,8 @@ export default function IconDetail() {
               style={{ backgroundColor: previewBg, color: iconColor }}
             >
               <div
-                className="w-full h-full max-w-[160px] max-h-[160px] [&>svg]:w-full [&>svg]:h-full"
-                dangerouslySetInnerHTML={{ __html: applyColorToSvg(icon.svgContent, iconColor) }}
+                className="w-full h-full overflow-hidden"
+                dangerouslySetInnerHTML={{ __html: applyColorToSvg(normalizeSvg(icon.svgContent), iconColor) }}
               />
             </div>
           </div>
