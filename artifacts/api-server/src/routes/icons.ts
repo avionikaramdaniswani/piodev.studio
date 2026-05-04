@@ -326,7 +326,7 @@ router.post("/:id/download", async (req: Request, res) => {
           .limit(1);
 
         if (profile) {
-          const today = new Date().toISOString().split("T")[0];
+          const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta" }).format(new Date());
           const isToday = profile.quotaResetDate === today;
           const currentDownloads = isToday ? profile.downloadsToday : 0;
           const isPlus = profile.tier === "plus";
