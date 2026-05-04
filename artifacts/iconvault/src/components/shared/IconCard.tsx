@@ -7,6 +7,7 @@ import { useToggleLike } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
+import { normalizeSvg } from "@/lib/utils";
 
 const ACCENT_COLORS = ['#FFE034', '#FF6B9D', '#4DBBFF', '#00E676', '#FF6B35'];
 const PNG_SIZES = [16, 24, 32, 48, 64, 128, 256, 512];
@@ -199,8 +200,8 @@ export function IconCard({ icon, index }: IconCardProps) {
             </span>
 
             <div
-              className="w-16 h-16 [&>svg]:w-full [&>svg]:h-full [&>svg]:text-foreground"
-              dangerouslySetInnerHTML={{ __html: icon.svgContent }}
+              className="w-16 h-16 overflow-hidden [&>svg]:text-foreground"
+              dangerouslySetInnerHTML={{ __html: normalizeSvg(icon.svgContent) }}
             />
             <div className="absolute inset-0 bg-background/90 hidden sm:flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity gap-3">
               <button

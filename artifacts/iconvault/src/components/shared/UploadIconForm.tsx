@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { useCreateIcon } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, FileCode, X, CheckCircle2, XCircle, Loader2, Files } from "lucide-react";
+import { normalizeSvg } from "@/lib/utils";
 
 const CATEGORIES = ["UI", "Navigation", "Social", "Media", "Files", "Communication", "Weather", "Finance", "Security", "Misc"];
 const STYLES = ["outline", "filled", "duotone"] as const;
@@ -22,29 +23,6 @@ function toSlug(name: string) {
   return name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
 }
 
-function normalizeSvgForPreview(svg: string): string {
-  return svg.replace(/<svg([^>]*)>/i, (_match, attrs: string) => {
-    const getAttr = (name: string) => {
-      const m = attrs.match(new RegExp(`\\b${name}\\s*=\\s*["']?([\\d.]+)`, "i"));
-      return m ? m[1] : null;
-    };
-
-    const hasViewBox = /\bviewBox\s*=/i.test(attrs);
-    const w = getAttr("width");
-    const h = getAttr("height");
-
-    let cleaned = attrs
-      .replace(/\bwidth\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "")
-      .replace(/\bheight\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "");
-
-    // If no viewBox but original dimensions exist, synthesize one so SVG scales correctly
-    if (!hasViewBox && w && h) {
-      cleaned += ` viewBox="0 0 ${w} ${h}"`;
-    }
-
-    return `<svg${cleaned} width="100%" height="100%" preserveAspectRatio="xMidYMid meet">`;
-  });
-}
 
 function computeSlug(baseSlug: string, index: number) {
   return index === 0 ? baseSlug : `${baseSlug}-${index + 1}`;
@@ -249,7 +227,7 @@ export function UploadIconForm({ onSuccess }: UploadIconFormProps) {
                       {/* SVG preview */}
                       <div
                         style={{ width: 48, height: 48, color: "#0A0A0A", overflow: "hidden", flexShrink: 0 }}
-                        dangerouslySetInnerHTML={{ __html: normalizeSvgForPreview(f.svgContent) }}
+                        dangerouslySetInnerHTML={{ __html: normalizeSvg(f.svgContent) }}
                       />
 
                       {/* Filename */}
