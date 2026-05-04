@@ -42,6 +42,18 @@
 - `/tools/favicon-generator` — Favicon Generator
 - `/tools/gradient-generator` — CSS Gradient Generator
 - `/upload` — Upload Icon
+- `/admin` — Admin Dashboard (sidebar layout, staff+)
+- `/admin/icons` — Kelola Ikon (staff+)
+- `/admin/users` — Kelola Pengguna (admin only)
+
+## Admin Panel Architecture
+
+Admin routes (`/admin/*`) use a dedicated `AdminLayout` (sidebar + main content) that bypasses the main `Layout` (Navbar + Footer). Each admin page wraps itself in `AdminLayout` + `RoleGuard`. The Router in `App.tsx` detects `/admin` prefix via `useLocation` and renders admin pages without the global Layout wrapper.
+
+- `src/components/layout/AdminLayout.tsx` — sidebar layout with nav, user info, logout
+- `src/pages/admin/index.tsx` — dashboard (stats + quick actions)
+- `src/pages/admin/icons.tsx` — icon browser with search + pagination
+- `src/pages/admin/users.tsx` — user management table (role/tier editor)
 
 ## Database Schema
 

@@ -1,4 +1,4 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -21,6 +21,8 @@ import UploadIcon from "@/pages/upload";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
 import AdminPage from "@/pages/admin";
+import AdminIconsPage from "@/pages/admin/icons";
+import AdminUsersPage from "@/pages/admin/users";
 import ProfilPage from "@/pages/profil";
 import PlusPage from "@/pages/plus";
 import NotFound from "@/pages/not-found";
@@ -35,6 +37,19 @@ const queryClient = new QueryClient({
 });
 
 function Router() {
+  const [location] = useLocation();
+
+  if (location.startsWith("/admin")) {
+    return (
+      <Switch>
+        <Route path="/admin" component={AdminPage} />
+        <Route path="/admin/icons" component={AdminIconsPage} />
+        <Route path="/admin/users" component={AdminUsersPage} />
+        <Route component={NotFound} />
+      </Switch>
+    );
+  }
+
   return (
     <Layout>
       <Switch>
@@ -53,7 +68,6 @@ function Router() {
         <Route path="/upload" component={UploadIcon} />
         <Route path="/login" component={Login} />
         <Route path="/register" component={Register} />
-        <Route path="/admin" component={AdminPage} />
         <Route path="/profil" component={ProfilPage} />
         <Route path="/plus" component={PlusPage} />
         <Route component={NotFound} />
