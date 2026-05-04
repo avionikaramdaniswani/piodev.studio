@@ -18,6 +18,7 @@ interface AuthContextType {
   username: string | null;
   downloadsToday: number;
   quotaLimit: number;
+  plusExpiresAt: string | null;
   loading: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -32,6 +33,7 @@ const AuthContext = createContext<AuthContextType>({
   username: null,
   downloadsToday: 0,
   quotaLimit: FREE_QUOTA,
+  plusExpiresAt: null,
   loading: true,
   signOut: async () => {},
   refreshProfile: async () => {},
@@ -44,6 +46,7 @@ interface ProfileData {
   username: string | null;
   downloadsToday: number;
   quotaLimit: number;
+  plusExpiresAt: string | null;
 }
 
 async function fetchProfile(accessToken: string): Promise<ProfileData | null> {
@@ -58,15 +61,13 @@ async function fetchProfile(accessToken: string): Promise<ProfileData | null> {
 
     if (!res.ok) {
       if (res.status === 404) {
-        // Genuine new user — profile not found, return safe defaults
-        return { role: "user", tier: "free", username: null, downloadsToday: 0, quotaLimit: FREE_QUOTA };
+        return { role: "user", tier: "free", username: null, downloadsToday: 0, quotaLimit: FREE_QUOTA, plusExpiresAt: null };
       }
       if (res.status === 401) {
-        // Token invalid — ghost session
         return null;
       }
       console.error("[AuthContext] fetchProfile API error:", res.status);
-      return { role: "user", tier: "free", username: null, downloadsToday: 0, quotaLimit: FREE_QUOTA };
+      return { role: "user", tier: "free", username: null, downloadsToday: 0, quotaLimit: FREE_QUOTA, plusExpiresAt: null };
     }
 
     const data = await res.json() as {
@@ -75,6 +76,7 @@ async function fetchProfile(accessToken: string): Promise<ProfileData | null> {
       username: string | null;
       downloadsToday: number;
       quotaResetDate: string | null;
+      plusExpiresAt: string | null;
     };
 
     const tier: UserTier = (data.tier as UserTier) ?? "free";
@@ -88,10 +90,11 @@ async function fetchProfile(accessToken: string): Promise<ProfileData | null> {
       username: data.username ?? null,
       downloadsToday,
       quotaLimit: tier === "plus" ? -1 : FREE_QUOTA,
+      plusExpiresAt: data.plusExpiresAt ?? null,
     };
   } catch (err) {
     console.error("[AuthContext] fetchProfile network error:", err);
-    return { role: "user", tier: "free", username: null, downloadsToday: 0, quotaLimit: FREE_QUOTA };
+    return { role: "user", tier: "free", username: null, downloadsToday: 0, quotaLimit: FREE_QUOTA, plusExpiresAt: null };
   }
 }
 
@@ -103,6 +106,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [username, setUsername] = useState<string | null>(null);
   const [downloadsToday, setDownloadsToday] = useState(0);
   const [quotaLimit, setQuotaLimit] = useState(FREE_QUOTA);
+  const [plusExpiresAt, setPlusExpiresAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const mountedRef = useRef(true);
@@ -113,6 +117,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUsername(p.username);
     setDownloadsToday(p.downloadsToday);
     setQuotaLimit(p.quotaLimit);
+    setPlusExpiresAt(p.plusExpiresAt);
   }, []);
 
   const clearProfile = useCallback(() => {
@@ -121,6 +126,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUsername(null);
     setDownloadsToday(0);
     setQuotaLimit(FREE_QUOTA);
+    setPlusExpiresAt(null);
     setAuthTokenGetter(null);
   }, []);
 
@@ -245,7 +251,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider value={{
       user, session, role, tier, username,
-      downloadsToday, quotaLimit, loading,
+      downloadsToday, quotaLimit, plusExpiresAt, loading,
       signOut, refreshProfile, updateUsername,
     }}>
       {children}

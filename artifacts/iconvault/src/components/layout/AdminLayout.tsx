@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Grid, Users, Upload, LogOut, Menu, X, Shield, ChevronRight } from "lucide-react";
+import { LayoutDashboard, Grid, Users, Upload, LogOut, Menu, X, Shield, ChevronRight, Ticket } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface NavItem {
@@ -17,6 +17,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/admin/icons", label: "KELOLA IKON", icon: Grid, accent: "#FFE034" },
   { href: "/admin/users", label: "KELOLA PENGGUNA", icon: Users, adminOnly: true, accent: "#4DBBFF" },
   { href: "/admin/upload", label: "UPLOAD IKON", icon: Upload, accent: "#00E676" },
+  { href: "/admin/codes", label: "REDEEM CODES", icon: Ticket, adminOnly: true, accent: "#FF6B9D" },
 ];
 
 function SidebarNav({ onClose }: { onClose?: () => void }) {

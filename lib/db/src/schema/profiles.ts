@@ -8,6 +8,7 @@ export const profilesTable = pgTable("profiles", {
   username: text("username"),
   downloadsToday: integer("downloads_today").notNull().default(0),
   quotaResetDate: date("quota_reset_date"),
+  plusExpiresAt: timestamp("plus_expires_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

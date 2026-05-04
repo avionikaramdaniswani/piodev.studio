@@ -45,6 +45,7 @@
 - `/admin` — Admin Dashboard (sidebar layout, staff+)
 - `/admin/icons` — Kelola Ikon (staff+)
 - `/admin/users` — Kelola Pengguna (admin only)
+- `/admin/codes` — Redeem Codes manager (admin only) — generate, list, delete codes
 
 ## Admin Panel Architecture
 
@@ -58,6 +59,17 @@ Admin routes (`/admin/*`) use a dedicated `AdminLayout` (sidebar + main content)
 ## Database Schema
 
 - `icons` table: id, name, slug, description, svg_content, category, tags[], style, downloads, likes, is_featured, license, created_at
+- `profiles` table: id, email, role, tier, username, downloads_today, quota_reset_date, plus_expires_at, created_at
+- `redeem_codes` table: id, code (PIODEV-XXXX-XXXX-XXXX), label, duration_days, expires_at, redeemed_by (FK→profiles), redeemed_at, created_at
+
+## Redeem Code System
+
+- Admin generates codes at `/admin/codes` — set quantity (max 50), label/note, duration (days Plus is active after redeem), optional code expiry date
+- Code format: `PIODEV-XXXX-XXXX-XXXX` (random uppercase alphanumeric)
+- Each code is single-use; once redeemed it's locked to that user
+- Users redeem codes at `/profil` → tab Langganan → "REDEEM KODE PLUS"
+- On redeem: user tier set to "plus", `plus_expires_at` set to now + duration_days
+- `/api/me` auto-expires Plus: if `plus_expires_at` has passed, tier reverts to "free" on next profile fetch
 
 ## Key Commands
 
@@ -77,3 +89,8 @@ Admin routes (`/admin/*`) use a dedicated `AdminLayout` (sidebar + main content)
 - `POST /api/icons/:id/download` — increment download count
 - `POST /api/icons/:id/like` — toggle like
 - `GET /api/icons/similar/:id` — similar icons by category
+- `GET /api/me` — current user profile (auth required); auto-expires Plus if past plus_expires_at
+- `GET /api/admin/codes` — list all redeem codes (admin only)
+- `POST /api/admin/codes/generate` — generate batch codes (admin only); body: { count, label, durationDays, expiresAt }
+- `DELETE /api/admin/codes/:id` — delete unused code (admin only)
+- `POST /api/redeem` — redeem a code to activate Plus (auth required); body: { code }

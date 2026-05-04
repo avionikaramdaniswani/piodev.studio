@@ -35,15 +35,30 @@ router.get("/", requireAuth, async (req: AuthenticatedRequest, res) => {
       username: newProfile.username ?? null,
       downloadsToday: 0,
       quotaResetDate: null,
+      plusExpiresAt: null,
     });
+  }
+
+  // Auto-expire Plus if the expiry date has passed
+  let tier = profile.tier;
+  let plusExpiresAt = profile.plusExpiresAt;
+
+  if (tier === "plus" && plusExpiresAt && new Date() > new Date(plusExpiresAt)) {
+    await db
+      .update(profilesTable)
+      .set({ tier: "free" })
+      .where(eq(profilesTable.id, userId));
+    tier = "free";
+    plusExpiresAt = null;
   }
 
   return res.json({
     role: profile.role,
-    tier: profile.tier,
+    tier,
     username: profile.username ?? null,
     downloadsToday: profile.downloadsToday,
     quotaResetDate: profile.quotaResetDate ?? null,
+    plusExpiresAt: plusExpiresAt ? new Date(plusExpiresAt).toISOString() : null,
   });
 });
 

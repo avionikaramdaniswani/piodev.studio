@@ -3,9 +3,10 @@ import { Link, useLocation } from "wouter";
 import {
   LogOut, Mail, Shield, Calendar, Key,
   Sparkles, Check, User, Lock, Download,
-  Pencil, X, CheckCheck,
+  Pencil, X, CheckCheck, Ticket, ArrowRight,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
 import { RoleGuard } from "@/components/shared/RoleGuard";
 import { TierBadge } from "@/components/shared/TierBadge";
 
@@ -242,9 +243,100 @@ function TabAkun() {
   );
 }
 
+function RedeemCodeBox({ onSuccess }: { onSuccess: () => void }) {
+  const [code, setCode] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  const handleRedeem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!code.trim()) return;
+    setError("");
+    setSuccess("");
+    setLoading(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch("/api/redeem", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token ?? ""}`,
+        },
+        body: JSON.stringify({ code: code.trim() }),
+      });
+
+      const data = await res.json() as { success?: boolean; plusExpiresAt?: string; durationDays?: number; error?: string };
+
+      if (!res.ok) {
+        setError(data.error ?? "Kode tidak valid.");
+      } else {
+        const expiry = data.plusExpiresAt
+          ? new Date(data.plusExpiresAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
+          : null;
+        setSuccess(`Berhasil! Plus aktif hingga ${expiry ?? `${data.durationDays} hari ke depan`}.`);
+        setCode("");
+        onSuccess();
+      }
+    } catch {
+      setError("Terjadi kesalahan. Coba lagi.");
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="border-[3px] border-foreground p-5 flex flex-col gap-4">
+      <div className="flex items-center gap-2 border-b-[2px] border-foreground/10 pb-3">
+        <Ticket className="w-4 h-4 opacity-60" />
+        <p className="font-black text-sm">REDEEM KODE PLUS</p>
+      </div>
+      <p className="font-mono text-xs opacity-50">
+        Punya kode dari langganan pio.codes? Masukkan di sini untuk aktifkan Plus.
+      </p>
+
+      {error && (
+        <div className="p-3 border-[2px] font-mono text-xs font-bold" style={{ borderColor: "#FF6B35", background: "#FFF3EF", color: "#FF6B35" }}>
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className="p-3 border-[2px] font-mono text-xs font-bold" style={{ borderColor: "#00E676", background: "#F0FFF4", color: "#00874A" }}>
+          {success}
+        </div>
+      )}
+
+      <form onSubmit={handleRedeem} className="flex gap-2">
+        <input
+          type="text"
+          value={code}
+          onChange={e => setCode(e.target.value.toUpperCase())}
+          placeholder="PIODEV-XXXX-XXXX-XXXX"
+          className="nb-input flex-1 px-3 py-2.5 text-sm font-mono tracking-wider uppercase"
+          disabled={loading}
+          maxLength={24}
+        />
+        <button
+          type="submit"
+          disabled={loading || !code.trim()}
+          className="nb-btn px-4 py-2.5 font-black text-sm flex items-center gap-1.5 disabled:opacity-50 whitespace-nowrap"
+          style={{ background: "#FFE034" }}
+        >
+          {loading ? "..." : <><ArrowRight className="w-4 h-4" /> PAKAI</>}
+        </button>
+      </form>
+    </div>
+  );
+}
+
 function TabLangganan() {
-  const { tier } = useAuth();
+  const { tier, plusExpiresAt, refreshProfile } = useAuth();
   const isPlus = tier === "plus";
+
+  const formatExpiry = (iso: string | null) => {
+    if (!iso) return null;
+    return new Date(iso).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+  };
 
   if (isPlus) {
     return (
@@ -253,7 +345,14 @@ function TabLangganan() {
           <p className="font-black text-xl flex items-center gap-2 mb-1">
             <Sparkles className="w-5 h-5" /> KAMU PENGGUNA PLUS!
           </p>
-          <p className="font-mono text-xs opacity-70">Nikmati semua fitur premium PioDev.studio</p>
+          {plusExpiresAt && (
+            <p className="font-mono text-xs opacity-70 mt-1">
+              Aktif hingga {formatExpiry(plusExpiresAt)}
+            </p>
+          )}
+          {!plusExpiresAt && (
+            <p className="font-mono text-xs opacity-70">Nikmati semua fitur premium PioDev.studio</p>
+          )}
         </div>
         <ul className="flex flex-col gap-2">
           {PLUS_PERKS.map(p => (
@@ -265,6 +364,7 @@ function TabLangganan() {
             </li>
           ))}
         </ul>
+        <RedeemCodeBox onSuccess={refreshProfile} />
       </div>
     );
   }
@@ -274,14 +374,17 @@ function TabLangganan() {
       <div className="flex items-center justify-between">
         <div>
           <p className="font-black text-lg">Paket aktif: <TierBadge tier="free" size="sm" /></p>
-          <p className="font-mono text-xs opacity-50 mt-1">Upgrade untuk akses penuh ke semua fitur</p>
+          <p className="font-mono text-xs opacity-50 mt-1">Punya kode Plus dari pio.codes? Redeem di bawah ini.</p>
         </div>
       </div>
+
+      <RedeemCodeBox onSuccess={refreshProfile} />
+
       <div className="border-[3px] border-foreground p-5 flex flex-col gap-4" style={{ background: "#FFE034" }}>
         <div className="flex items-start justify-between">
           <div>
-            <p className="font-black text-2xl">Plus — Rp 49.000<span className="font-mono text-sm font-normal">/bln</span></p>
-            <p className="font-mono text-xs opacity-70 mt-0.5">Atau Rp 470.000/tahun · hemat 20%</p>
+            <p className="font-black text-lg">Belum punya kode?</p>
+            <p className="font-mono text-xs opacity-70 mt-0.5">Dapatkan kode Plus via langganan pio.codes</p>
           </div>
           <TierBadge tier="plus" size="sm" />
         </div>
@@ -297,7 +400,7 @@ function TabLangganan() {
           className="nb-btn py-3 font-black flex items-center justify-center gap-2"
           style={{ background: "#0A0A0A", color: "white" }}
         >
-          <Sparkles className="w-4 h-4" /> LIHAT DETAIL & UPGRADE →
+          <Sparkles className="w-4 h-4" /> LIHAT DETAIL PLUS →
         </Link>
       </div>
     </div>

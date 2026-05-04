@@ -23,6 +23,7 @@ import AdminPage from "@/pages/admin";
 import AdminIconsPage from "@/pages/admin/icons";
 import AdminUsersPage from "@/pages/admin/users";
 import AdminUploadPage from "@/pages/admin/upload";
+import AdminCodesPage from "@/pages/admin/codes";
 import ProfilPage from "@/pages/profil";
 import PlusPage from "@/pages/plus";
 import NotFound from "@/pages/not-found";
@@ -46,6 +47,7 @@ function Router() {
         <Route path="/admin/icons" component={AdminIconsPage} />
         <Route path="/admin/users" component={AdminUsersPage} />
         <Route path="/admin/upload" component={AdminUploadPage} />
+        <Route path="/admin/codes" component={AdminCodesPage} />
         <Route component={NotFound} />
       </Switch>
     );
