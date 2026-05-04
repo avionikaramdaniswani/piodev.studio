@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
-import { Users } from "lucide-react";
+import {
+  Users, Eye, X, Mail, Shield, Calendar,
+  Key, Sparkles, Download, User, Clock,
+} from "lucide-react";
 import { RoleGuard } from "@/components/shared/RoleGuard";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,24 +12,198 @@ import type { UserTier } from "@/contexts/AuthContext";
 interface UserRow {
   id: string;
   email: string;
+  username: string | null;
   role: string;
   tier: UserTier;
+  plus_expires_at: string | null;
+  downloads_today: number;
   created_at: string;
 }
 
 const ROLE_COLORS: Record<string, string> = { admin: "#FF6B35", staff: "#4DBBFF", user: "#FFE034" };
+const ROLE_LABELS: Record<string, string> = { admin: "Admin", staff: "Staff", user: "User" };
+
+function fmtDate(iso: string | null, opts?: Intl.DateTimeFormatOptions) {
+  if (!iso) return "–";
+  return new Date(iso).toLocaleDateString("id-ID", opts ?? { day: "numeric", month: "short", year: "numeric" });
+}
+
+function DetailRow({ icon, label, children }: { icon: React.ReactNode; label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-start gap-3 py-3 border-b-[2px] border-foreground/10 last:border-0">
+      <div className="opacity-40 mt-0.5 shrink-0">{icon}</div>
+      <div className="min-w-0 flex-1">
+        <p className="font-mono text-[10px] opacity-40 mb-0.5">{label}</p>
+        <div className="font-bold text-sm break-all">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function UserDrawer({
+  user,
+  onClose,
+  onRoleChange,
+  onTierChange,
+}: {
+  user: UserRow;
+  onClose: () => void;
+  onRoleChange: (id: string, role: string) => void;
+  onTierChange: (id: string, tier: UserTier) => void;
+}) {
+  const isPlus = user.tier === "plus";
+  const plusExpired = user.plus_expires_at && new Date() > new Date(user.plus_expires_at);
+
+  return (
+    <>
+      <div
+        className="fixed inset-0 z-40 bg-black/50"
+        onClick={onClose}
+      />
+      <div
+        className="fixed top-0 right-0 h-full z-50 w-full max-w-sm border-l-[4px] border-foreground shadow-[-8px_0_0_#0A0A0A] flex flex-col overflow-hidden"
+        style={{ background: "var(--background)" }}
+      >
+        <div
+          className="flex items-center justify-between px-5 py-4 border-b-[3px] border-foreground shrink-0"
+          style={{ background: "#4DBBFF" }}
+        >
+          <div className="flex items-center gap-2">
+            <Eye className="w-5 h-5" />
+            <p className="font-black text-base">DETAIL PENGGUNA</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="opacity-60 hover:opacity-100 transition-opacity"
+            aria-label="Tutup"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-0">
+          <div
+            className="flex items-center gap-3 p-4 border-[3px] border-foreground mb-4 shadow-[4px_4px_0_#0A0A0A]"
+            style={{ background: isPlus ? "#FFE034" : "var(--card)" }}
+          >
+            <div
+              className="w-12 h-12 border-[3px] border-foreground flex items-center justify-center font-black text-lg shrink-0"
+              style={{ background: "#4DBBFF" }}
+            >
+              {(user.username ?? user.email).slice(0, 2).toUpperCase()}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-black truncate">
+                {user.username ? `@${user.username}` : <span className="opacity-40 italic text-sm font-mono">Belum ada username</span>}
+              </p>
+              <p className="font-mono text-xs opacity-60 truncate">{user.email}</p>
+            </div>
+          </div>
+
+          <DetailRow icon={<User className="w-4 h-4" />} label="USERNAME">
+            {user.username ? (
+              <span className="font-mono">@{user.username}</span>
+            ) : (
+              <span className="opacity-40 italic font-mono text-xs">Belum diatur</span>
+            )}
+          </DetailRow>
+
+          <DetailRow icon={<Mail className="w-4 h-4" />} label="EMAIL">
+            <span className="font-mono text-xs">{user.email}</span>
+          </DetailRow>
+
+          <DetailRow icon={<Calendar className="w-4 h-4" />} label="BERGABUNG SEJAK">
+            {fmtDate(user.created_at, { day: "numeric", month: "long", year: "numeric" })}
+          </DetailRow>
+
+          <DetailRow icon={<Download className="w-4 h-4" />} label="UNDUHAN HARI INI">
+            <span>{user.downloads_today ?? 0} unduhan</span>
+          </DetailRow>
+
+          <DetailRow icon={<Sparkles className="w-4 h-4" />} label="STATUS PLUS">
+            {isPlus ? (
+              <div className="flex flex-col gap-1">
+                <span
+                  className="font-black text-xs px-2 py-1 border-[2px] border-foreground self-start"
+                  style={{ background: "#FFE034" }}
+                >
+                  PLUS AKTIF ✦
+                </span>
+                {user.plus_expires_at && (
+                  <span className={`font-mono text-xs ${plusExpired ? "text-red-500" : "opacity-60"}`}>
+                    {plusExpired ? "Kedaluwarsa: " : "Aktif hingga: "}
+                    {fmtDate(user.plus_expires_at, { day: "numeric", month: "long", year: "numeric" })}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <span className="opacity-50 font-mono text-xs">Free tier</span>
+            )}
+          </DetailRow>
+
+          <DetailRow icon={<Key className="w-4 h-4" />} label="USER ID">
+            <span className="font-mono text-[10px] opacity-60 break-all">{user.id}</span>
+          </DetailRow>
+
+          <div className="mt-4 flex flex-col gap-3 border-t-[3px] border-foreground pt-4">
+            <p className="font-black text-xs opacity-50">AKSI CEPAT</p>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="font-black text-xs flex items-center gap-1">
+                <Shield className="w-3.5 h-3.5 opacity-50" /> PERAN
+              </label>
+              <select
+                value={user.role}
+                onChange={e => onRoleChange(user.id, e.target.value)}
+                className="nb-input px-3 py-2 text-sm font-black cursor-pointer"
+                style={{ background: ROLE_COLORS[user.role] ?? "#FFE034" }}
+              >
+                <option value="user">USER</option>
+                <option value="staff">STAFF</option>
+                <option value="admin">ADMIN</option>
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="font-black text-xs flex items-center gap-1">
+                <Sparkles className="w-3.5 h-3.5 opacity-50" /> TIER
+              </label>
+              <select
+                value={user.tier ?? "free"}
+                onChange={e => onTierChange(user.id, e.target.value as UserTier)}
+                className="nb-input px-3 py-2 text-sm font-black cursor-pointer"
+                style={{ background: user.tier === "plus" ? "#FFE034" : "#e5e5e5" }}
+              >
+                <option value="free">FREE</option>
+                <option value="plus">PLUS ✦</option>
+              </select>
+            </div>
+
+            <div
+              className="border-[2px] border-foreground p-3 font-mono text-[10px] opacity-50 flex items-start gap-2"
+            >
+              <Clock className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+              <span>Perubahan peran dan tier langsung tersimpan ke database saat dipilih.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
 
 function AdminUsers() {
   const { role } = useAuth();
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [selectedUser, setSelectedUser] = useState<UserRow | null>(null);
 
   useEffect(() => {
     if (role === "admin") {
       supabase
         .from("profiles")
-        .select("id, email, role, tier, created_at")
+        .select("id, email, username, role, tier, plus_expires_at, downloads_today, created_at")
         .order("created_at", { ascending: false })
         .limit(100)
         .then(({ data }) => {
@@ -41,15 +218,18 @@ function AdminUsers() {
   const changeRole = async (userId: string, newRole: string) => {
     await supabase.from("profiles").update({ role: newRole }).eq("id", userId);
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
+    setSelectedUser(prev => prev?.id === userId ? { ...prev, role: newRole } : prev);
   };
 
   const changeTier = async (userId: string, newTier: UserTier) => {
     await supabase.from("profiles").update({ tier: newTier }).eq("id", userId);
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, tier: newTier } : u));
+    setSelectedUser(prev => prev?.id === userId ? { ...prev, tier: newTier } : prev);
   };
 
   const filtered = users.filter(u =>
-    u.email.toLowerCase().includes(search.toLowerCase())
+    u.email.toLowerCase().includes(search.toLowerCase()) ||
+    (u.username ?? "").toLowerCase().includes(search.toLowerCase())
   );
 
   const plusCount = users.filter(u => u.tier === "plus").length;
@@ -86,10 +266,10 @@ function AdminUsers() {
             </h2>
             <input
               type="text"
-              placeholder="Cari email..."
+              placeholder="Cari email / username..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="border-[3px] border-foreground px-3 py-1.5 font-mono text-sm focus:outline-none w-full sm:w-48"
+              className="border-[3px] border-foreground px-3 py-1.5 font-mono text-sm focus:outline-none w-full sm:w-56"
             />
           </div>
 
@@ -111,15 +291,26 @@ function AdminUsers() {
                     <th className="text-left py-2 pr-4 font-black">EMAIL</th>
                     <th className="text-left py-2 pr-3 font-black whitespace-nowrap">BERGABUNG</th>
                     <th className="text-left py-2 pr-3 font-black">PERAN</th>
-                    <th className="text-left py-2 font-black">TIER</th>
+                    <th className="text-left py-2 pr-3 font-black">TIER</th>
+                    <th className="py-2 font-black text-center">AKSI</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.map(u => (
-                    <tr key={u.id} className="border-b-[2px] border-foreground/10 hover:bg-secondary/50">
-                      <td className="py-3 pr-4 truncate max-w-[180px]" title={u.email}>{u.email}</td>
+                    <tr
+                      key={u.id}
+                      className={`border-b-[2px] border-foreground/10 hover:bg-secondary/50 ${selectedUser?.id === u.id ? "bg-secondary/70" : ""}`}
+                    >
+                      <td className="py-3 pr-4">
+                        <div className="flex flex-col min-w-0">
+                          <span className="truncate max-w-[160px] block" title={u.email}>{u.email}</span>
+                          {u.username && (
+                            <span className="text-[10px] opacity-40">@{u.username}</span>
+                          )}
+                        </div>
+                      </td>
                       <td className="py-3 pr-3 opacity-50 whitespace-nowrap text-xs">
-                        {new Date(u.created_at).toLocaleDateString("id-ID")}
+                        {fmtDate(u.created_at)}
                       </td>
                       <td className="py-3 pr-3">
                         <select
@@ -133,7 +324,7 @@ function AdminUsers() {
                           <option value="admin">ADMIN</option>
                         </select>
                       </td>
-                      <td className="py-3">
+                      <td className="py-3 pr-3">
                         <select
                           value={u.tier ?? "free"}
                           onChange={e => changeTier(u.id, e.target.value as UserTier)}
@@ -144,6 +335,16 @@ function AdminUsers() {
                           <option value="plus">PLUS ✦</option>
                         </select>
                       </td>
+                      <td className="py-3 text-center">
+                        <button
+                          onClick={() => setSelectedUser(u)}
+                          className={`border-[2px] border-foreground p-1.5 transition-all hover:shadow-[2px_2px_0_#0A0A0A] ${selectedUser?.id === u.id ? "shadow-[2px_2px_0_#0A0A0A]" : ""}`}
+                          style={{ background: selectedUser?.id === u.id ? "#4DBBFF" : "transparent" }}
+                          title={`Lihat detail ${u.email}`}
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -152,6 +353,15 @@ function AdminUsers() {
           )}
         </div>
       </div>
+
+      {selectedUser && (
+        <UserDrawer
+          user={selectedUser}
+          onClose={() => setSelectedUser(null)}
+          onRoleChange={changeRole}
+          onTierChange={changeTier}
+        />
+      )}
     </AdminLayout>
   );
 }
