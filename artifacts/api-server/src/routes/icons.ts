@@ -91,6 +91,7 @@ router.get("/", async (req, res) => {
       or(
         ilike(iconsTable.name, `%${search}%`),
         ilike(iconsTable.category, `%${search}%`),
+        sql`array_to_string(${iconsTable.tags}, ',') ILIKE ${"%" + search + "%"}`,
       ),
     );
   }
