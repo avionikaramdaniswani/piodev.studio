@@ -62,7 +62,7 @@ function UserDrawer({
       />
       <div
         className="fixed top-0 right-0 h-full z-50 w-full max-w-sm border-l-[4px] border-foreground shadow-[-8px_0_0_#0A0A0A] flex flex-col overflow-hidden"
-        style={{ background: "var(--background)" }}
+        style={{ background: "#FFFBF0" }}
       >
         <div
           className="flex items-center justify-between px-5 py-4 border-b-[3px] border-foreground shrink-0"
