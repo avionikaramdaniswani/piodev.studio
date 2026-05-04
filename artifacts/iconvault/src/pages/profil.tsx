@@ -3,12 +3,12 @@ import { Link, useLocation } from "wouter";
 import {
   LogOut, Mail, Shield, Calendar, Key,
   Sparkles, Check, User, Lock, Download,
-  Pencil, X, CheckCheck, Ticket, ArrowRight,
+  Pencil, X, CheckCheck,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/lib/supabase";
 import { RoleGuard } from "@/components/shared/RoleGuard";
 import { TierBadge } from "@/components/shared/TierBadge";
+import { RedeemCodeBox } from "@/components/shared/RedeemCodeBox";
 
 const ROLE_META: Record<string, { label: string; bg: string; color: string }> = {
   admin: { label: "Admin", bg: "#FF6B35", color: "white" },
@@ -243,91 +243,6 @@ function TabAkun() {
   );
 }
 
-function RedeemCodeBox({ onSuccess }: { onSuccess: () => void }) {
-  const [code, setCode] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-
-  const handleRedeem = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!code.trim()) return;
-    setError("");
-    setSuccess("");
-    setLoading(true);
-
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch("/api/redeem", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session?.access_token ?? ""}`,
-        },
-        body: JSON.stringify({ code: code.trim() }),
-      });
-
-      const data = await res.json() as { success?: boolean; plusExpiresAt?: string; durationDays?: number; error?: string };
-
-      if (!res.ok) {
-        setError(data.error ?? "Kode tidak valid.");
-      } else {
-        const expiry = data.plusExpiresAt
-          ? new Date(data.plusExpiresAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
-          : null;
-        setSuccess(`Berhasil! Plus aktif hingga ${expiry ?? `${data.durationDays} hari ke depan`}.`);
-        setCode("");
-        onSuccess();
-      }
-    } catch {
-      setError("Terjadi kesalahan. Coba lagi.");
-    }
-    setLoading(false);
-  };
-
-  return (
-    <div className="border-[3px] border-foreground p-5 flex flex-col gap-4">
-      <div className="flex items-center gap-2 border-b-[2px] border-foreground/10 pb-3">
-        <Ticket className="w-4 h-4 opacity-60" />
-        <p className="font-black text-sm">REDEEM KODE PLUS</p>
-      </div>
-      <p className="font-mono text-xs opacity-50">
-        Punya kode dari langganan pio.codes? Masukkan di sini untuk aktifkan Plus.
-      </p>
-
-      {error && (
-        <div className="p-3 border-[2px] font-mono text-xs font-bold" style={{ borderColor: "#FF6B35", background: "#FFF3EF", color: "#FF6B35" }}>
-          {error}
-        </div>
-      )}
-      {success && (
-        <div className="p-3 border-[2px] font-mono text-xs font-bold" style={{ borderColor: "#00E676", background: "#F0FFF4", color: "#00874A" }}>
-          {success}
-        </div>
-      )}
-
-      <form onSubmit={handleRedeem} className="flex gap-2">
-        <input
-          type="text"
-          value={code}
-          onChange={e => setCode(e.target.value.toUpperCase())}
-          placeholder="PIODEV-XXXX-XXXX-XXXX"
-          className="nb-input flex-1 px-3 py-2.5 text-sm font-mono tracking-wider uppercase"
-          disabled={loading}
-          maxLength={24}
-        />
-        <button
-          type="submit"
-          disabled={loading || !code.trim()}
-          className="nb-btn px-4 py-2.5 font-black text-sm flex items-center gap-1.5 disabled:opacity-50 whitespace-nowrap"
-          style={{ background: "#FFE034" }}
-        >
-          {loading ? "..." : <><ArrowRight className="w-4 h-4" /> PAKAI</>}
-        </button>
-      </form>
-    </div>
-  );
-}
 
 function TabLangganan() {
   const { tier, plusExpiresAt, refreshProfile } = useAuth();

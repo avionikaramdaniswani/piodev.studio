@@ -1,7 +1,8 @@
 import { Link } from "wouter";
-import { Check, Sparkles, Zap, Download, Shield, Headphones, Star } from "lucide-react";
+import { Check, Sparkles, Zap, Download, Shield, Headphones, Star, Ticket } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { TierBadge } from "@/components/shared/TierBadge";
+import { RedeemCodeBox } from "@/components/shared/RedeemCodeBox";
 
 const FEATURES = [
   {
@@ -49,7 +50,7 @@ const FEATURES = [
 ];
 
 export default function PlusPage() {
-  const { user, tier } = useAuth();
+  const { user, tier, refreshProfile } = useAuth();
   const isPlus = tier === "plus";
   const isLoggedIn = !!user;
 
@@ -176,6 +177,39 @@ export default function PlusPage() {
           </div>
         ))}
       </div>
+
+      {/* Redeem code section */}
+      {isLoggedIn && (
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-3 border-b-[3px] border-foreground pb-3">
+            <Ticket className="w-5 h-5 opacity-60" />
+            <div>
+              <p className="font-black text-lg">PUNYA KODE PLUS?</p>
+              <p className="font-mono text-xs opacity-50">Aktifkan langsung di sini tanpa perlu ke halaman profil.</p>
+            </div>
+          </div>
+          <RedeemCodeBox onSuccess={refreshProfile} />
+        </div>
+      )}
+
+      {!isLoggedIn && (
+        <div className="border-[3px] border-foreground p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Ticket className="w-5 h-5 opacity-40" />
+            <div>
+              <p className="font-black">PUNYA KODE PLUS?</p>
+              <p className="font-mono text-xs opacity-50">Login dulu untuk redeem kode Plus kamu.</p>
+            </div>
+          </div>
+          <Link
+            href="/login"
+            className="nb-btn py-2.5 px-6 font-black text-sm flex items-center gap-2 whitespace-nowrap"
+            style={{ background: "#4DBBFF" }}
+          >
+            LOGIN UNTUK REDEEM
+          </Link>
+        </div>
+      )}
 
       {/* CTA bottom */}
       {!isPlus && (
