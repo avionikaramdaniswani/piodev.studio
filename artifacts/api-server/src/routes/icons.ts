@@ -155,6 +155,35 @@ router.post("/", requireAuth, requireRole("staff"), async (req, res) => {
   return res.status(201).json(icon);
 });
 
+// GET /icons/slug-start?base=time
+// Returns the next available starting index for a given base slug
+router.get("/slug-start", async (req, res) => {
+  const base = (req.query.base as string | undefined)?.trim();
+  if (!base) return res.json({ startIndex: 0 });
+
+  const rows = await db
+    .select({ slug: iconsTable.slug })
+    .from(iconsTable)
+    .where(or(eq(iconsTable.slug, base), ilike(iconsTable.slug, `${base}-%`)));
+
+  if (rows.length === 0) return res.json({ startIndex: 0 });
+
+  let maxIndex = -1;
+  for (const { slug } of rows) {
+    if (slug === base) {
+      maxIndex = Math.max(maxIndex, 0);
+    } else {
+      const suffix = slug.slice(base.length + 1);
+      const num = parseInt(suffix, 10);
+      if (!isNaN(num) && num >= 2) {
+        maxIndex = Math.max(maxIndex, num - 1);
+      }
+    }
+  }
+
+  return res.json({ startIndex: maxIndex + 1 });
+});
+
 // GET /icons/featured
 router.get("/featured", async (_req, res) => {
   const icons = await db

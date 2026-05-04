@@ -120,15 +120,28 @@ export function UploadIconForm({ onSuccess }: UploadIconFormProps) {
 
     setIsUploading(true);
     const parsedTags = tags.split(",").map((t) => t.trim()).filter(Boolean);
+    const baseSlugValue = slug || toSlug(name);
     let successCount = 0;
     let lastSlug = "";
+
+    // Check DB for existing slugs with this base to avoid conflicts
+    let startIndex = 0;
+    try {
+      const res = await fetch(`/api/icons/slug-start?base=${encodeURIComponent(baseSlugValue)}`);
+      if (res.ok) {
+        const data = await res.json() as { startIndex: number };
+        startIndex = data.startIndex;
+      }
+    } catch {
+      // If check fails, continue from 0 (best-effort)
+    }
 
     // Only upload pending files; track their index for slug numbering
     const pendingFiles = svgFiles.filter((f) => f.status !== "success");
 
     for (let i = 0; i < pendingFiles.length; i++) {
       const file = pendingFiles[i];
-      const fileSlug = computeSlug(slug || toSlug(name), i);
+      const fileSlug = computeSlug(baseSlugValue, startIndex + i);
 
       updateFile(file.id, { status: "uploading" });
       try {
