@@ -1,0 +1,207 @@
+Docker 29.4.3 with BuildKit and Buildx detected on deployment server (localhost).
+2026-May-07 19:40:10.887111
+Starting deployment of piodev-72p8 to localhost.
+2026-May-07 19:40:11.062080
+Preparing container with helper image: ghcr.io/coollabsio/coolify-helper:1.0.13
+2026-May-07 19:40:13.586497
+----------------------------------------
+2026-May-07 19:40:13.594304
+Building docker image started.
+2026-May-07 19:40:13.602409
+To check the current progress, click on Show Debug Logs.
+2026-May-07 19:40:23.386593
+========================================
+2026-May-07 19:40:23.397736
+Deployment failed: Command execution failed (exit code 1): docker exec qu0j8pglvk2c3u44zxuouphv bash -c 'bash /artifacts/build.sh'
+2026-May-07 19:40:23.397736
+Error: #0 building with "default" instance using docker driver
+2026-May-07 19:40:23.397736
+2026-May-07 19:40:23.397736
+#1 [internal] load build definition from Dockerfile
+2026-May-07 19:40:23.397736
+#1 transferring dockerfile: 1.05kB done
+2026-May-07 19:40:23.397736
+#1 DONE 0.1s
+2026-May-07 19:40:23.397736
+2026-May-07 19:40:23.397736
+#2 [internal] load metadata for docker.io/library/node:22-alpine
+2026-May-07 19:40:23.397736
+#2 DONE 0.8s
+2026-May-07 19:40:23.397736
+2026-May-07 19:40:23.397736
+#3 [internal] load .dockerignore
+2026-May-07 19:40:23.397736
+#3 transferring context: 2B done
+2026-May-07 19:40:23.397736
+#3 DONE 0.1s
+2026-May-07 19:40:23.397736
+2026-May-07 19:40:23.397736
+#4 [1/6] FROM docker.io/library/node:22-alpine@sha256:8ea2348b068a9544dae7317b4f3aafcdc032df1647bb7d768a05a5cad1a7683f
+2026-May-07 19:40:23.397736
+#4 resolve docker.io/library/node:22-alpine@sha256:8ea2348b068a9544dae7317b4f3aafcdc032df1647bb7d768a05a5cad1a7683f 0.1s done
+2026-May-07 19:40:23.397736
+#4 CACHED
+2026-May-07 19:40:23.397736
+2026-May-07 19:40:23.397736
+#5 [2/6] RUN apk add --no-cache git openssh-client
+2026-May-07 19:40:23.397736
+#5 0.574 ( 1/19) Installing brotli-libs (1.2.0-r0)
+2026-May-07 19:40:23.397736
+#5 0.598 ( 2/19) Installing c-ares (1.34.6-r0)
+2026-May-07 19:40:23.397736
+#5 0.602 ( 3/19) Installing libunistring (1.4.1-r0)
+2026-May-07 19:40:23.397736
+#5 0.615 ( 4/19) Installing libidn2 (2.3.8-r0)
+2026-May-07 19:40:23.397736
+#5 0.618 ( 5/19) Installing nghttp2-libs (1.69.0-r0)
+2026-May-07 19:40:23.397736
+#5 0.622 ( 6/19) Installing nghttp3 (1.13.1-r0)
+2026-May-07 19:40:23.397736
+#5 0.625 ( 7/19) Installing libpsl (0.21.5-r3)
+2026-May-07 19:40:23.397736
+#5 0.627 ( 8/19) Installing zstd-libs (1.5.7-r2)
+2026-May-07 19:40:23.397736
+#5 0.636 ( 9/19) Installing libcurl (8.17.0-r1)
+2026-May-07 19:40:23.397736
+#5 0.644 (10/19) Installing libexpat (2.7.5-r0)
+2026-May-07 19:40:23.397736
+#5 0.647 (11/19) Installing pcre2 (10.47-r0)
+2026-May-07 19:40:23.397736
+#5 0.655 (12/19) Installing git (2.52.0-r0)
+2026-May-07 19:40:23.397736
+#5 0.732 (13/19) Installing git-init-template (2.52.0-r0)
+2026-May-07 19:40:23.397736
+#5 0.736 (14/19) Installing openssh-keygen (10.2_p1-r0)
+2026-May-07 19:40:23.397736
+#5 0.743 (15/19) Installing ncurses-terminfo-base (6.5_p20251123-r0)
+2026-May-07 19:40:23.397736
+#5 0.749 (16/19) Installing libncursesw (6.5_p20251123-r0)
+2026-May-07 19:40:23.397736
+#5 0.753 (17/19) Installing libedit (20251016.3.1-r0)
+2026-May-07 19:40:23.397736
+#5 0.757 (18/19) Installing openssh-client-common (10.2_p1-r0)
+2026-May-07 19:40:23.397736
+#5 0.772 (19/19) Installing openssh-client-default (10.2_p1-r0)
+2026-May-07 19:40:23.397736
+#5 0.781 Executing busybox-1.37.0-r30.trigger
+2026-May-07 19:40:23.397736
+#5 0.797 OK: 27.5 MiB in 37 packages
+2026-May-07 19:40:23.397736
+#5 DONE 1.4s
+2026-May-07 19:40:23.397736
+2026-May-07 19:40:23.397736
+#6 [3/6] RUN corepack enable && corepack prepare pnpm@9 --activate
+2026-May-07 19:40:23.397736
+#6 0.873 Preparing pnpm@9 for immediate activation...
+2026-May-07 19:40:23.397736
+#6 DONE 2.7s
+2026-May-07 19:40:23.397736
+2026-May-07 19:40:23.397736
+#7 [4/6] RUN git clone --depth=1 --branch main https://github.com/avionikaramdaniswani/piodev.studio.git /app
+2026-May-07 19:40:23.397736
+#7 0.217 Cloning into '/app'...
+2026-May-07 19:40:23.397736
+#7 DONE 1.3s
+2026-May-07 19:40:23.397736
+2026-May-07 19:40:23.397736
+#8 [5/6] WORKDIR /app
+2026-May-07 19:40:23.397736
+#8 DONE 0.2s
+2026-May-07 19:40:23.397736
+2026-May-07 19:40:23.397736
+#9 [6/6] RUN pnpm run build --no-frozen-lockfile && pnpm --filter @workspace/api-server run build
+2026-May-07 19:40:23.397736
+#9 0.871
+2026-May-07 19:40:23.397736
+#9 0.871 > workspace@0.0.0 build /app
+2026-May-07 19:40:23.397736
+#9 0.871 > pnpm run typecheck && pnpm -r --if-present run build --no-frozen-lockfile
+2026-May-07 19:40:23.397736
+#9 0.871
+2026-May-07 19:40:23.397736
+#9 1.427
+2026-May-07 19:40:23.397736
+#9 1.427 > workspace@0.0.0 typecheck /app
+2026-May-07 19:40:23.397736
+#9 1.427 > pnpm run typecheck:<REDACTED>@0.0.0 typecheck:libs /app
+2026-May-07 19:40:23.397736
+#9 1.970 > tsc --build
+2026-May-07 19:40:23.397736
+#9 1.970
+2026-May-07 19:40:23.397736
+#9 1.975 sh: tsc: not found
+2026-May-07 19:40:23.397736
+#9 1.979  ELIFECYCLE  Command failed.
+2026-May-07 19:40:23.397736
+#9 1.980  WARN   Local package.json exists, but node_modules missing, did you mean to install?
+2026-May-07 19:40:23.397736
+#9 1.997  ELIFECYCLE  Command failed with exit code 1.
+2026-May-07 19:40:23.397736
+#9 1.998  WARN   Local package.json exists, but node_modules missing, did you mean to install?
+2026-May-07 19:40:23.397736
+#9 2.015  ELIFECYCLE  Command failed with exit code 1.
+2026-May-07 19:40:23.397736
+#9 2.016  WARN   Local package.json exists, but node_modules missing, did you mean to install?
+2026-May-07 19:40:23.397736
+#9 ERROR: process "/bin/sh -c pnpm run build --no-frozen-lockfile && pnpm --filter @workspace/api-server run build" did not complete successfully: exit code: 1
+2026-May-07 19:40:23.397736
+------
+2026-May-07 19:40:23.397736
+> [6/6] RUN pnpm run build --no-frozen-lockfile && pnpm --filter @workspace/api-server run build:
+2026-May-07 19:40:23.397736
+1.970 > workspace@0.0.0 typecheck:libs /app
+2026-May-07 19:40:23.397736
+1.970 > tsc --build
+2026-May-07 19:40:23.397736
+1.970
+2026-May-07 19:40:23.397736
+1.975 sh: tsc: not found
+2026-May-07 19:40:23.397736
+1.979  ELIFECYCLE  Command failed.
+2026-May-07 19:40:23.397736
+1.980  WARN   Local package.json exists, but node_modules missing, did you mean to install?
+2026-May-07 19:40:23.397736
+1.997  ELIFECYCLE  Command failed with exit code 1.
+2026-May-07 19:40:23.397736
+1.998  WARN   Local package.json exists, but node_modules missing, did you mean to install?
+2026-May-07 19:40:23.397736
+2.015  ELIFECYCLE  Command failed with exit code 1.
+2026-May-07 19:40:23.397736
+2.016  WARN   Local package.json exists, but node_modules missing, did you mean to install?
+2026-May-07 19:40:23.397736
+------
+2026-May-07 19:40:23.397736
+2026-May-07 19:40:23.397736
+3 warnings found (use docker --debug to expand):
+2026-May-07 19:40:23.397736
+- SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "VITE_SUPABASE_ANON_KEY") (line 6)
+2026-May-07 19:40:23.397736
+- SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "SUPABASE_ANON_KEY") (line 7)
+2026-May-07 19:40:23.397736
+- SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "SESSION_SECRET") (line 4)
+2026-May-07 19:40:23.397736
+Dockerfile:19
+2026-May-07 19:40:23.397736
+--------------------
+2026-May-07 19:40:23.397736
+17 |     RUN git clone --depth=1 --branch main https://github.com/avionikaramdaniswani/piodev.studio.git /app
+2026-May-07 19:40:23.397736
+18 |     WORKDIR /app
+2026-May-07 19:40:23.397736
+19 | >>> RUN pnpm run build --no-frozen-lockfile && pnpm --filter @workspace/api-server run build
+2026-May-07 19:40:23.397736
+20 |     EXPOSE 3000
+2026-May-07 19:40:23.397736
+21 |     CMD ["sh", "-c", "pnpm run start --filter @workspace/api-server run start"]
+2026-May-07 19:40:23.397736
+--------------------
+2026-May-07 19:40:23.397736
+ERROR:<REDACTED>@workspace/api-server run build" did not complete successfully: exit code: 1
+2026-May-07 19:40:23.397736
+exit status 1
+2026-May-07 19:40:23.500101
+========================================
+2026-May-07 19:40:23.508670
+Deployment failed. Removing the new version of your application.
+2026-May-07 19:40:23.914918
+Gracefully shutting down build container: qu0j8pglvk2c3u44zxuouphv

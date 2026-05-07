@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "export NODE_ENV=development && node ./build.mjs && pnpm run start",
     "build": "pnpm --filter @workspace/iconvault run build && node ./build.mjs",
+    "build:api-only": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
