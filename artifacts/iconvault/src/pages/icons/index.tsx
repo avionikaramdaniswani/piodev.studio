@@ -219,20 +219,31 @@ export default function IconsList() {
 
         <div className="flex-1 w-full min-w-0 flex flex-col gap-8">
 
-          {/* Packs section — folder cards (only when no filter active) */}
+          {/* Packs section — horizontal slider */}
           {showPacksInGrid && packs.length > 0 && (
             <div>
-              <div className="flex items-center gap-2 mb-4">
+              <div className="flex items-center gap-2 mb-3">
                 <Package className="w-4 h-4" />
-                <h2 className="font-black text-sm">ICON PACKS</h2>
-                <span className="font-mono text-xs opacity-40">— koleksi ikon terpaket</span>
+                <h2 className="font-black text-sm flex-1">ICON PACKS</h2>
+                <Link
+                  href="/packs"
+                  className="flex items-center gap-1 font-black text-xs px-3 py-1.5 border-[2px] border-foreground shadow-[2px_2px_0_#0A0A0A] hover:shadow-[3px_3px_0_#0A0A0A] transition-all"
+                  style={{ background: "#FFE034" }}
+                >
+                  LIHAT SEMUA →
+                </Link>
               </div>
-              <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 lg:gap-4 mb-2">
+              <div
+                className="flex gap-3 overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden"
+                style={{ scrollbarWidth: "none" }}
+              >
                 {packs.map((pack) => (
-                  <PackFolderCard key={pack.id} pack={pack} />
+                  <div key={pack.id} className="shrink-0 w-[140px] sm:w-[160px]">
+                    <PackFolderCard pack={pack} />
+                  </div>
                 ))}
               </div>
-              <div className="border-b-[3px] border-foreground/20 mt-6" />
+              <div className="border-b-[3px] border-foreground/20 mt-4" />
             </div>
           )}
 
