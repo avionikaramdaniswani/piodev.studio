@@ -249,8 +249,8 @@ export default function IconsList() {
 
           {/* Individual icons */}
           {loadingIcons ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-              {[...Array(20)].map((_, i) => <div key={i} className="nb-card aspect-square bg-muted animate-pulse" />)}
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-3">
+              {[...Array(24)].map((_, i) => <div key={i} className="aspect-square border-[3px] border-foreground bg-muted animate-pulse" />)}
             </div>
           ) : (Array.isArray(iconData?.icons) ? iconData!.icons.length : 0) === 0 ? (
             <div className="nb-card p-12 text-center" style={{ background: "#FFE034" }}>
@@ -265,7 +265,7 @@ export default function IconsList() {
                   <Grid3x3 className="w-4 h-4" /> IKON INDIVIDUAL
                 </h2>
               )}
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 lg:gap-4 mb-10">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-3 mb-10">
                 {(Array.isArray(iconData?.icons) ? iconData!.icons : []).map((icon, i) => (
                   <IconCard key={icon.id} icon={icon} index={i} />
                 ))}

@@ -62,9 +62,9 @@ export default function PackDetailPage() {
     return (
       <div className="flex flex-col gap-6 py-6">
         <div className="h-40 nb-card animate-pulse" />
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {[...Array(10)].map((_, i) => (
-            <div key={i} className="nb-card aspect-square animate-pulse bg-muted" />
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-3">
+          {[...Array(12)].map((_, i) => (
+            <div key={i} className="aspect-square border-[3px] border-foreground animate-pulse bg-muted" />
           ))}
         </div>
       </div>
@@ -146,7 +146,7 @@ export default function PackDetailPage() {
           <h2 className="font-black text-sm opacity-40 mb-4 flex items-center gap-2">
             <Grid3x3 className="w-4 h-4" /> {icons.length} IKON DALAM PACK INI
           </h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 lg:gap-4">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-3">
             {icons.map((icon, i) => (
               <IconCard key={icon.id} icon={icon} index={i} />
             ))}
