@@ -21,16 +21,22 @@ app.use(
 
 const devDomain = process.env["REPLIT_DEV_DOMAIN"];
 const replitDomains = process.env["REPLIT_DOMAINS"];
+const corsOrigins = process.env["CORS_ORIGINS"];
 const allowedHostnames = new Set<string>();
 if (devDomain) allowedHostnames.add(devDomain);
 if (replitDomains) {
   replitDomains.split(",").forEach((d) => allowedHostnames.add(d.trim()));
 }
+if (corsOrigins) {
+  corsOrigins.split(",").forEach((d) => allowedHostnames.add(d.trim()));
+}
+const openCors = allowedHostnames.size === 0;
 
 app.use(
   cors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
+      if (openCors) return callback(null, true);
       try {
         const hostname = new URL(origin).hostname;
         if (allowedHostnames.has(hostname)) return callback(null, true);
