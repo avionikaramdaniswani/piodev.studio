@@ -11,7 +11,8 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "catalog:",
-    "jspdf": "^4.2.1"
+    "jspdf": "^4.2.1",
+    "jszip": "^3.10.1"
   },
   "devDependencies": {
     "@hookform/resolvers": "^3.10.0",
