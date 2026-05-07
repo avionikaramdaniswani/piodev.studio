@@ -22,6 +22,7 @@ export const iconsTable = pgTable("icons", {
   likes: integer("likes").notNull().default(0),
   isFeatured: boolean("is_featured").notNull().default(false),
   license: text("license").notNull().default("MIT"),
+  packId: integer("pack_id"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

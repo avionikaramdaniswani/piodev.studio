@@ -3,7 +3,7 @@ import { useRoute, Link, useLocation } from "wouter";
 import { Download, Heart, Hash, Layers, Tag, ExternalLink, Code2, Sparkles, UserPlus, X, FileImage, FileText, FileCode2, ChevronDown } from "lucide-react";
 import { jsPDF } from "jspdf";
 
-import { useGetIconBySlug, useDownloadIcon, useToggleLike, useGetSimilarIcons } from "@workspace/api-client-react";
+import { useGetIconBySlug, useDownloadIcon, useToggleLike, useGetSimilarIcons, getGetSimilarIconsQueryKey } from "@workspace/api-client-react";
 
 import { useToast } from "@/hooks/use-toast";
 import { IconCard } from "@/components/shared/IconCard";
@@ -77,7 +77,7 @@ export default function IconDetail() {
   const slug = params?.slug || "";
 
   const { data: icon, isLoading, error } = useGetIconBySlug(slug);
-  const { data: similarIcons } = useGetSimilarIcons(icon?.id || 0, { query: { enabled: !!icon?.id } });
+  const { data: similarIcons } = useGetSimilarIcons(icon?.id || 0, { query: { enabled: !!icon?.id, queryKey: getGetSimilarIconsQueryKey(icon?.id || 0) } });
 
   const { toast } = useToast();
   const downloadMutation = useDownloadIcon();

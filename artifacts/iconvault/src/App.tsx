@@ -26,6 +26,7 @@ import AdminUploadPage from "@/pages/admin/upload";
 import AdminCodesPage from "@/pages/admin/codes";
 import ProfilPage from "@/pages/profil";
 import PlusPage from "@/pages/plus";
+import PackDetail from "@/pages/packs/[slug]";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -72,6 +73,7 @@ function Router() {
         <Route path="/register" component={Register} />
         <Route path="/profil" component={ProfilPage} />
         <Route path="/plus" component={PlusPage} />
+        <Route path="/packs/:slug" component={PackDetail} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
