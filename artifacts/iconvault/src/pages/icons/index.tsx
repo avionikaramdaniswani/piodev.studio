@@ -31,63 +31,50 @@ function PackFolderCard({ pack }: { pack: Pack }) {
 
   return (
     <Link href={`/packs/${pack.slug}`} className="group block">
-      <div
-        className="nb-card overflow-hidden transition-transform duration-150 group-hover:-translate-y-1 group-hover:shadow-[6px_6px_0_#0A0A0A] flex flex-col"
-        style={{ background: "#FFFBF0" }}
-      >
-        {/* Folder tab strip */}
-        <div className="flex items-center gap-0 px-3 pt-2">
-          <div
-            className="h-5 px-3 flex items-center border-[2px] border-b-0 border-foreground text-[9px] font-black"
-            style={{ background: catColor }}
-          >
+      <div className="border-[3px] border-foreground shadow-[3px_3px_0_#0A0A0A] transition-transform duration-150 group-hover:-translate-y-0.5 group-hover:shadow-[5px_5px_0_#0A0A0A] flex flex-col overflow-hidden" style={{ background: "#FFFBF0" }}>
+
+        {/* Folder tab */}
+        <div className="flex">
+          <div className="px-2 py-[3px] border-b-[3px] border-r-[2px] border-foreground text-[8px] font-black tracking-wider" style={{ background: catColor }}>
             PACK
           </div>
+          <div className="flex-1 border-b-[3px] border-foreground" style={{ background: catColor, opacity: 0.25 }} />
         </div>
 
-        {/* Folder body — 2×2 preview */}
-        <div
-          className="border-[3px] border-foreground mx-0 relative"
-          style={{ background: "#F0EBE0" }}
-        >
-          <div className="grid grid-cols-2">
-            {[0, 1, 2, 3].map((i) => {
-              const icon = pack.previewIcons[i];
-              return (
-                <div
-                  key={i}
-                  className={`aspect-square flex items-center justify-center p-3
-                    ${i === 1 || i === 3 ? "border-l-[2px] border-foreground/40" : ""}
-                    ${i >= 2 ? "border-t-[2px] border-foreground/40" : ""}
-                  `}
-                >
-                  {icon ? (
-                    <div
-                      className="w-full h-full [&>svg]:w-full [&>svg]:h-full opacity-80"
-                      dangerouslySetInnerHTML={{ __html: normalizeSvg(icon.svgContent) }}
-                    />
-                  ) : (
-                    <div className="w-6 h-6 border-[2px] border-foreground/20 rounded-full" />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Icon count badge — bottom right */}
-          <div
-            className="absolute bottom-1.5 right-1.5 flex items-center gap-1 font-mono text-[10px] font-bold px-1.5 py-0.5 border-[2px] border-foreground"
-            style={{ background: catColor }}
-          >
-            <Grid3x3 className="w-2.5 h-2.5" />
+        {/* 2×2 preview grid — compact */}
+        <div className="grid grid-cols-2 border-b-[2px] border-foreground/30 relative" style={{ background: "#EDE8DC" }}>
+          {[0, 1, 2, 3].map((i) => {
+            const icon = pack.previewIcons[i];
+            return (
+              <div
+                key={i}
+                className={`aspect-square flex items-center justify-center p-2
+                  ${i === 1 || i === 3 ? "border-l-[1px] border-foreground/30" : ""}
+                  ${i >= 2 ? "border-t-[1px] border-foreground/30" : ""}
+                `}
+              >
+                {icon ? (
+                  <div
+                    className="w-full h-full [&>svg]:w-full [&>svg]:h-full opacity-75"
+                    dangerouslySetInnerHTML={{ __html: normalizeSvg(icon.svgContent) }}
+                  />
+                ) : (
+                  <div className="w-4 h-4 border-[2px] border-foreground/15 rounded-full" />
+                )}
+              </div>
+            );
+          })}
+          {/* count pill */}
+          <div className="absolute bottom-1 right-1 flex items-center gap-0.5 font-mono text-[9px] font-bold px-1 py-px border-[2px] border-foreground" style={{ background: catColor }}>
+            <Grid3x3 className="w-2 h-2" />
             {pack.iconCount}
           </div>
         </div>
 
-        {/* Name */}
-        <div className="px-3 py-2.5 flex items-center gap-1.5 min-w-0">
-          <Package className="w-3.5 h-3.5 shrink-0 opacity-50" />
-          <p className="font-black text-[13px] leading-tight line-clamp-1 flex-1">{pack.name}</p>
+        {/* Name row */}
+        <div className="px-2.5 py-2 flex items-center gap-1.5 min-w-0">
+          <Package className="w-3 h-3 shrink-0 opacity-40" />
+          <p className="font-black text-[11px] leading-tight line-clamp-1 flex-1">{pack.name}</p>
         </div>
       </div>
     </Link>
@@ -240,7 +227,7 @@ export default function IconsList() {
                 <h2 className="font-black text-sm">ICON PACKS</h2>
                 <span className="font-mono text-xs opacity-40">— koleksi ikon terpaket</span>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-2">
+              <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 lg:gap-4 mb-2">
                 {packs.map((pack) => (
                   <PackFolderCard key={pack.id} pack={pack} />
                 ))}
