@@ -2,7 +2,7 @@ import { Router } from "express";
 import type { Request } from "express";
 import { db } from "@workspace/db";
 import { iconsTable, profilesTable } from "@workspace/db";
-import { eq, ilike, and, sql, or, ne } from "drizzle-orm";
+import { eq, ilike, and, sql, or, ne, isNull } from "drizzle-orm";
 import {
   ListIconsQueryParams,
   CreateIconBody,
@@ -85,7 +85,7 @@ router.get("/", async (req, res) => {
 
   const { search, category, style, page, limit } = parsed.data;
 
-  const conditions = [];
+  const conditions = [isNull(iconsTable.packId)];
   if (search) {
     conditions.push(
       or(
@@ -98,7 +98,7 @@ router.get("/", async (req, res) => {
   if (category) conditions.push(eq(iconsTable.category, category));
   if (style) conditions.push(eq(iconsTable.style, style));
 
-  const where = conditions.length ? and(...conditions) : undefined;
+  const where = and(...conditions);
 
   const [icons, [{ count }]] = await Promise.all([
     db
